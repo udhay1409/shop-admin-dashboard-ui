@@ -31,6 +31,7 @@ const formSchema = z.object({
   status: z.enum(['Active', 'Inactive', 'Draft']),
   imageUrl: z.string().optional(),
   color: z.string().optional(),
+  parentId: z.string().optional(),
 });
 
 interface CategoryFormProps {
@@ -39,6 +40,7 @@ interface CategoryFormProps {
   onSubmit: (values: CategoryFormValues) => void;
   onCancel: () => void;
   isSubmitting: boolean;
+  isSubcategory?: boolean;
 }
 
 const CategoryForm: React.FC<CategoryFormProps> = ({
@@ -46,7 +48,8 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   parentCategories = [],
   onSubmit,
   onCancel,
-  isSubmitting
+  isSubmitting,
+  isSubcategory = false
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(category?.imageUrl || null);
@@ -59,6 +62,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       status: category?.status || 'Draft',
       imageUrl: category?.imageUrl || '',
       color: category?.color || '#6E59A5',
+      parentId: category?.parentId || undefined,
     },
   });
 
@@ -88,6 +92,10 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
     
     if (category?.id) {
       formValues.id = category.id;
+    }
+    
+    if (isSubcategory && values.parentId) {
+      formValues.parentId = values.parentId;
     }
     
     onSubmit(formValues);
@@ -136,6 +144,39 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {isSubcategory && (
+            <FormField
+              control={form.control}
+              name="parentId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Parent Category</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select parent category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {parentCategories.map(parentCategory => (
+                        <SelectItem key={parentCategory.id} value={parentCategory.id}>
+                          {parentCategory.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Select which category this will be a subcategory of.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
           <FormField
             control={form.control}
             name="status"

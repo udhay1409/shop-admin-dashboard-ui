@@ -16,6 +16,7 @@ interface CategoryDialogProps {
   parentCategories: Category[];
   onSubmit: (values: CategoryFormValues) => Promise<void>;
   isSubmitting: boolean;
+  isSubcategory?: boolean;
 }
 
 const CategoryDialog: React.FC<CategoryDialogProps> = ({
@@ -24,7 +25,8 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
   category,
   parentCategories,
   onSubmit,
-  isSubmitting
+  isSubmitting,
+  isSubcategory = false
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -38,6 +40,7 @@ const CategoryDialog: React.FC<CategoryDialogProps> = ({
           onSubmit={onSubmit}
           onCancel={onClose}
           isSubmitting={isSubmitting}
+          isSubcategory={isSubcategory}
         />
       </DialogContent>
     </Dialog>

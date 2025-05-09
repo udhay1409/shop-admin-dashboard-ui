@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Folder, Grid3X3 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
@@ -285,6 +286,7 @@ const Categories: React.FC = () => {
         parentCategories={categories}
         onSubmit={handleCreateOrUpdateCategory}
         isSubmitting={isSubmitting}
+        isSubcategory={activeTab === "subcategories"}
       />
 
       {/* Delete Dialog */}
