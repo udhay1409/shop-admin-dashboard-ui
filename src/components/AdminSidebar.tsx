@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -16,7 +16,9 @@ import {
   Settings,
   CreditCard,
   Truck,
-  Grid3X3
+  User,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,9 +35,54 @@ interface SidebarItemProps {
   icon: React.ElementType;
   text: string;
   badge?: number;
+  subItems?: {
+    to: string;
+    text: string;
+    icon?: React.ElementType;
+  }[];
 }
 
-const SidebarItem = ({ to, icon: Icon, text, badge }: SidebarItemProps) => {
+const SidebarItem = ({ to, icon: Icon, text, badge, subItems }: SidebarItemProps) => {
+  const [expanded, setExpanded] = useState(false);
+  
+  if (subItems && subItems.length > 0) {
+    return (
+      <li className="space-y-1">
+        <button 
+          onClick={() => setExpanded(!expanded)} 
+          className="sidebar-item flex w-full items-center"
+        >
+          <Icon size={20} />
+          <span className="flex-1">{text}</span>
+          {badge && (
+            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+              {badge}
+            </span>
+          )}
+          {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </button>
+        
+        {expanded && (
+          <ul className="pl-8 space-y-1 mt-1">
+            {subItems.map(item => (
+              <li key={item.to}>
+                <NavLink 
+                  to={item.to} 
+                  className={({ isActive }) => 
+                    cn("sidebar-subitem", isActive && "active")
+                  }
+                >
+                  {item.icon && <item.icon size={16} />}
+                  <span className="flex-1 text-sm">{item.text}</span>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        )}
+      </li>
+    );
+  }
+  
   return (
     <li>
       <NavLink 
@@ -67,15 +114,20 @@ const AdminSidebar = () => {
           <SidebarItem to="/orders" icon={ShoppingCart} text="Orders" badge={10} />
           <SidebarItem to="/products" icon={Package} text="Products" />
           <SidebarItem to="/categories" icon={Folder} text="Categories" />
-          <SidebarItem to="/subcategories" icon={Grid3X3} text="Subcategories" />
           <SidebarItem to="/delivery" icon={Truck} text="Delivery" badge={5} />
-          <SidebarItem to="/contact" icon={Users} text="Contact" />
+          <SidebarItem 
+            to="/contact" 
+            icon={Users} 
+            text="Contact" 
+            subItems={[
+              { to: "/customers", text: "Customers", icon: User },
+              { to: "/vendors", text: "Vendors", icon: Store }
+            ]}
+          />
         </ul>
         
         <div className="mt-4 border-t border-gray-200 pt-4">
           <ul className="space-y-1">
-            <SidebarItem to="/customers" icon={Users} text="Customers" />
-            <SidebarItem to="/vendors" icon={Store} text="Vendors" />
             <SidebarItem to="/coupon-code" icon={Tag} text="Coupon code" />
             <SidebarItem to="/reviews" icon={Star} text="Reviews Management" />
             <SidebarItem to="/transaction-logs" icon={Receipt} text="Transaction Logs" />

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,13 +23,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Upload } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Category name must be at least 2 characters.' }),
   description: z.string().optional(),
   status: z.enum(['Active', 'Inactive', 'Draft']),
   imageUrl: z.string().optional(),
-  parentId: z.string().optional(),
   color: z.string().optional(),
 });
 
@@ -48,6 +48,9 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   onCancel,
   isSubmitting
 }) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(category?.imageUrl || null);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -55,10 +58,23 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       description: category?.description || '',
       status: category?.status || 'Draft',
       imageUrl: category?.imageUrl || '',
-      parentId: category?.parentId || undefined,
       color: category?.color || '#6E59A5',
     },
   });
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setSelectedFile(file);
+    
+    // Create a preview URL
+    const fileUrl = URL.createObjectURL(file);
+    setPreviewUrl(fileUrl);
+    
+    // Update the form value
+    form.setValue('imageUrl', fileUrl);
+  };
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     // Ensure we're passing a properly structured CategoryFormValues object
@@ -67,7 +83,6 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       description: values.description || '',
       status: values.status,
       imageUrl: values.imageUrl,
-      parentId: values.parentId,
       color: values.color
     };
     
@@ -152,44 +167,6 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
 
           <FormField
             control={form.control}
-            name="parentId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Parent Category</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="None (Top Level)" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">None (Top Level)</SelectItem>
-                    {parentCategories.map(parent => (
-                      <SelectItem 
-                        key={parent.id} 
-                        value={parent.id}
-                        disabled={parent.id === category?.id}
-                      >
-                        {parent.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Optionally select a parent category.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
             name="color"
             render={({ field }) => (
               <FormItem className="flex flex-col">
@@ -210,24 +187,56 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
               </FormItem>
             )}
           />
+        </div>
 
-          <FormField
-            control={form.control}
-            name="imageUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Image URL</FormLabel>
+        <FormField
+          control={form.control}
+          name="imageUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category Image</FormLabel>
+              <div className="flex flex-col space-y-3">
+                <div className="flex items-center gap-4">
+                  {previewUrl && (
+                    <div className="relative w-24 h-24 rounded-md overflow-hidden border">
+                      <img 
+                        src={previewUrl} 
+                        alt="Preview" 
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                  )}
+                  <label htmlFor="image-upload" className="cursor-pointer">
+                    <div className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-slate-100 transition-colors">
+                      <Upload className="h-5 w-5" />
+                      <span>Choose File</span>
+                      <input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </div>
+                    {selectedFile && (
+                      <p className="text-sm text-gray-500 mt-1">{selectedFile.name}</p>
+                    )}
+                  </label>
+                </div>
                 <FormControl>
-                  <Input placeholder="https://example.com/image.jpg" {...field} value={field.value || ''} />
+                  <Input 
+                    type="hidden" 
+                    {...field} 
+                  />
                 </FormControl>
                 <FormDescription>
-                  Optional: Add an image URL for this category.
+                  Upload an image for this category (optional).
                 </FormDescription>
                 <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+              </div>
+            </FormItem>
+          )}
+        />
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={onCancel}>
