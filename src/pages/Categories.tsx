@@ -146,6 +146,11 @@ const Categories: React.FC = () => {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Convert 'none' to undefined for parentId
+      if (values.parentId === 'none') {
+        values.parentId = undefined;
+      }
+      
       const isSubcategory = activeTab === "subcategories" || values.parentId;
       const currentList = isSubcategory ? subcategories : categories;
       const setCurrentList = isSubcategory ? setSubcategories : setCategories;

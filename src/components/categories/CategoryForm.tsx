@@ -166,7 +166,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">None (Top Level)</SelectItem>
+                    <SelectItem value="none">None (Top Level)</SelectItem>
                     {parentCategories.map(parent => (
                       <SelectItem 
                         key={parent.id} 
