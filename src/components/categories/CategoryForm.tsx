@@ -61,10 +61,21 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit({
-      ...values,
-      id: category?.id,
-    });
+    // Ensure we're passing a properly structured CategoryFormValues object
+    const formValues: CategoryFormValues = {
+      name: values.name,
+      description: values.description || '',
+      status: values.status,
+      imageUrl: values.imageUrl,
+      parentId: values.parentId,
+      color: values.color
+    };
+    
+    if (category?.id) {
+      formValues.id = category.id;
+    }
+    
+    onSubmit(formValues);
   };
 
   return (
