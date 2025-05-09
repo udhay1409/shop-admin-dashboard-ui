@@ -15,6 +15,12 @@ export type Category = {
   color?: string;
 };
 
-export type CategoryFormValues = Omit<Category, "id" | "productsCount" | "createdAt" | "updatedAt" | "slug"> & {
+export type CategoryFormValues = {
   id?: string;
+  name: string;
+  description: string;
+  status: CategoryStatus;
+  imageUrl?: string;
+  parentId?: string;
+  color?: string;
 };

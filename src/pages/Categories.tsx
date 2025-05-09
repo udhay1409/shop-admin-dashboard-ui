@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Folder, Grid3X3 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
@@ -258,7 +257,7 @@ const Categories: React.FC = () => {
           <CategoryList
             categories={categories}
             onEdit={handleEditCategory}
-            onDelete={category => handleDeleteIntent(category)}
+            onDelete={handleDeleteIntent}
             onAdd={handleAddCategory}
           />
         </TabsContent>
@@ -267,7 +266,7 @@ const Categories: React.FC = () => {
           <CategoryList
             categories={subcategories}
             onEdit={handleEditCategory}
-            onDelete={category => handleDeleteIntent(category)}
+            onDelete={handleDeleteIntent}
             onAdd={handleAddCategory}
           />
         </TabsContent>

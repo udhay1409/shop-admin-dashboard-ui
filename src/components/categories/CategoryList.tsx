@@ -17,7 +17,7 @@ import { Edit, Trash2, Plus } from 'lucide-react';
 interface CategoryListProps {
   categories: Category[];
   onEdit: (category: Category) => void;
-  onDelete: (id: string) => void;
+  onDelete: (category: Category) => void;
   onAdd: () => void;
 }
 
@@ -97,7 +97,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      onClick={() => onDelete(category.id)}
+                      onClick={() => onDelete(category)}
                     >
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">Delete</span>
