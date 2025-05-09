@@ -1,8 +1,9 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AdminLayout from "./components/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
@@ -11,9 +12,28 @@ import Categories from "./pages/Categories";
 import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
 import Delivery from "./pages/Delivery";
+import Customers from "./pages/Customers";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Simple authentication state (in a real app, use proper auth management)
+const isAuthenticated = () => {
+  // Replace with actual auth logic
+  return true; // Set to false to test authentication flow
+};
+
+// Protected route component
+const ProtectedRoute = ({ children }) => {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -22,7 +42,17 @@ const App = () => (
         <Toaster />
         <Sonner />
         <Routes>
-          <Route path="/" element={<AdminLayout />}>
+          {/* Authentication routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          {/* Protected admin routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
             <Route index element={<Dashboard />} />
             <Route path="orders" element={<Orders />} />
             <Route path="products" element={<Products />} />
@@ -30,7 +60,7 @@ const App = () => (
             <Route path="payments" element={<Payments />} />
             <Route path="reports" element={<Reports />} />
             <Route path="delivery" element={<Delivery />} />
-            <Route path="customers" element={<NotFound />} /> {/* Placeholder for Customers */}
+            <Route path="customers" element={<Customers />} />
             <Route path="vendors" element={<NotFound />} /> {/* Placeholder for Vendors */}
             <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
             {/* Other routes will be added as they're needed */}
