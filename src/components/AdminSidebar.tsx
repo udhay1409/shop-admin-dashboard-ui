@@ -12,13 +12,14 @@ import {
   Star, 
   Receipt, 
   BarChart2, 
-  PocketKnife, 
   Settings,
   CreditCard,
   Truck,
   User,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Warehouse,
+  Boxes
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -115,6 +116,8 @@ const AdminSidebar = () => {
           <SidebarItem to="/products" icon={Package} text="Products" />
           <SidebarItem to="/categories" icon={Folder} text="Categories" />
           <SidebarItem to="/delivery" icon={Truck} text="Delivery" badge={5} />
+          <SidebarItem to="/inventory" icon={Boxes} text="Inventory" />
+          <SidebarItem to="/vendors" icon={Store} text="Vendors" />
           <SidebarItem 
             to="/contact" 
             icon={Users} 

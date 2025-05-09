@@ -13,6 +13,8 @@ import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
 import Delivery from "./pages/Delivery";
 import Customers from "./pages/Customers";
+import Vendors from "./pages/Vendors";
+import Inventory from "./pages/Inventory";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -61,7 +63,8 @@ const App = () => (
             <Route path="reports" element={<Reports />} />
             <Route path="delivery" element={<Delivery />} />
             <Route path="customers" element={<Customers />} />
-            <Route path="vendors" element={<NotFound />} /> {/* Placeholder for Vendors */}
+            <Route path="vendors" element={<Vendors />} />
+            <Route path="inventory" element={<Inventory />} />
             <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
             {/* Other routes will be added as they're needed */}
             <Route path="*" element={<NotFound />} />
