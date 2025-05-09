@@ -5,7 +5,7 @@ import {
   LayoutDashboard, 
   ShoppingCart, 
   Package, 
-  FolderKanban, 
+  Folder, 
   Users, 
   Store, 
   Tag, 
@@ -15,7 +15,8 @@ import {
   PocketKnife, 
   Settings,
   CreditCard,
-  Truck
+  Truck,
+  Grid3X3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -65,7 +66,8 @@ const AdminSidebar = () => {
           <SidebarItem to="/" icon={LayoutDashboard} text="Dashboard" />
           <SidebarItem to="/orders" icon={ShoppingCart} text="Orders" badge={10} />
           <SidebarItem to="/products" icon={Package} text="Products" />
-          <SidebarItem to="/categories" icon={FolderKanban} text="Categories" />
+          <SidebarItem to="/categories" icon={Folder} text="Categories" />
+          <SidebarItem to="/subcategories" icon={Grid3X3} text="Subcategories" />
           <SidebarItem to="/delivery" icon={Truck} text="Delivery" badge={5} />
           <SidebarItem to="/contact" icon={Users} text="Contact" />
         </ul>
