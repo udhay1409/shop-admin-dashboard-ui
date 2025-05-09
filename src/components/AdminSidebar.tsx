@@ -15,8 +15,7 @@ import {
   PocketKnife, 
   Settings,
   CreditCard,
-  Truck,
-  FolderTree
+  Truck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -67,7 +66,6 @@ const AdminSidebar = () => {
           <SidebarItem to="/orders" icon={ShoppingCart} text="Orders" badge={10} />
           <SidebarItem to="/products" icon={Package} text="Products" />
           <SidebarItem to="/categories" icon={FolderKanban} text="Categories" />
-          <SidebarItem to="/subcategories" icon={FolderTree} text="Subcategories" />
           <SidebarItem to="/delivery" icon={Truck} text="Delivery" badge={5} />
           <SidebarItem to="/contact" icon={Users} text="Contact" />
         </ul>
