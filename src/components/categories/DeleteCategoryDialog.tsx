@@ -35,11 +35,11 @@ const DeleteCategoryDialog: React.FC<DeleteCategoryDialogProps> = ({
             {categoryName ? (
               <>
                 This will permanently delete the category <strong>"{categoryName}"</strong> and 
-                cannot be undone. This won't delete the products in this category, but they will no 
+                cannot be undone. This won&apos;t delete the products in this category, but they will no 
                 longer be associated with this category.
               </>
             ) : (
-              'This action cannot be undone. This won't delete the products in this category, but they will no longer be associated with this category.'
+              "This action cannot be undone. This won't delete the products in this category, but they will no longer be associated with this category."
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
