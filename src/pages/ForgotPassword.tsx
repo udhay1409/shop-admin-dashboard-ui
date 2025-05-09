@@ -77,7 +77,7 @@ const ForgotPassword = () => {
             {isSubmitted ? (
               <>We've sent recovery instructions to <span className="font-medium">{userEmail}</span></>
             ) : (
-              'Enter your email address and we'll send you a link to reset your password'
+              "Enter your email address and we'll send you a link to reset your password"
             )}
           </CardDescription>
         </CardHeader>
