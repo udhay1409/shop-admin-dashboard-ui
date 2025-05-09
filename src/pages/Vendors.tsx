@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { PlusCircle, Search, FileText, MoreHorizontal, Download, Trash, Filter } from 'lucide-react';
+import { PlusCircle, Search, FileText, MoreHorizontal, Download, Trash, Filter, ListFilter, ArrowLeftRight, FileBarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -26,9 +25,11 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VendorForm from '@/components/vendors/VendorForm';
 import PurchaseBillForm from '@/components/vendors/PurchaseBillForm';
 import VendorDetails from '@/components/vendors/VendorDetails';
+import { Badge } from '@/components/ui/badge';
 
 // Mock data for vendors
 const mockVendors = [
@@ -74,7 +75,7 @@ const mockVendors = [
   },
 ];
 
-// Mock data for purchase bills
+// Mock data for purchase bills with expanded information
 const mockPurchaseBills = [
   { 
     id: 'PB001', 
@@ -84,6 +85,9 @@ const mockPurchaseBills = [
     amount: '$5,250.00',
     status: 'Paid',
     paymentDate: '2025-05-02',
+    paymentMethod: 'Bank Transfer',
+    invoiceNumber: 'INV-2025-001',
+    deliveryDate: '2025-05-05',
     items: [
       { name: 'Summer Dresses', quantity: 50, price: '$45.00', total: '$2,250.00' },
       { name: 'Designer Jeans', quantity: 30, price: '$100.00', total: '$3,000.00' }
@@ -96,7 +100,8 @@ const mockPurchaseBills = [
     billDate: '2025-04-20', 
     amount: '$3,750.00',
     status: 'Pending',
-    paymentDate: '',
+    paymentMethod: 'Credit Card',
+    invoiceNumber: 'INV-2025-002',
     items: [
       { name: 'Cotton Fabric', quantity: 500, price: '$5.00', total: '$2,500.00' },
       { name: 'Silk Material', quantity: 50, price: '$25.00', total: '$1,250.00' }
@@ -110,9 +115,26 @@ const mockPurchaseBills = [
     amount: '$8,400.00',
     status: 'Paid',
     paymentDate: '2025-05-05',
+    paymentMethod: 'Wire Transfer',
+    invoiceNumber: 'INV-2025-003',
+    deliveryDate: '2025-05-10',
     items: [
       { name: 'Designer Handbags', quantity: 20, price: '$320.00', total: '$6,400.00' },
       { name: 'Fashion Belts', quantity: 100, price: '$20.00', total: '$2,000.00' }
+    ]
+  },
+  { 
+    id: 'PB004', 
+    vendorId: '1', 
+    vendorName: 'Fashion Wholesaler Inc.', 
+    billDate: '2025-05-15', 
+    amount: '$7,800.00',
+    status: 'Pending',
+    paymentMethod: 'Check',
+    invoiceNumber: 'INV-2025-004',
+    items: [
+      { name: 'Winter Jackets', quantity: 30, price: '$150.00', total: '$4,500.00' },
+      { name: 'Cashmere Sweaters', quantity: 20, price: '$165.00', total: '$3,300.00' }
     ]
   },
 ];
@@ -126,6 +148,7 @@ const Vendors = () => {
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [selectedBill, setSelectedBill] = useState(null);
   const [activeTab, setActiveTab] = useState('vendors');
+  const [selectedVendorFilter, setSelectedVendorFilter] = useState('all');
 
   const filteredVendors = mockVendors.filter(vendor => 
     vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -133,14 +156,29 @@ const Vendors = () => {
     vendor.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredBills = mockPurchaseBills.filter(bill => 
-    bill.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bill.vendorName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBills = mockPurchaseBills.filter(bill => {
+    // First apply search term filter
+    const matchesSearch = 
+      bill.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bill.vendorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (bill.invoiceNumber && bill.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Then apply vendor filter if not set to 'all'
+    if (selectedVendorFilter !== 'all') {
+      return matchesSearch && bill.vendorId === selectedVendorFilter;
+    }
+    
+    return matchesSearch;
+  });
 
   const handleOpenVendorDetails = (vendor) => {
     setSelectedVendor(vendor);
     setIsVendorDetailsOpen(true);
+  };
+
+  const handleViewVendorBills = (vendorId) => {
+    setActiveTab('bills');
+    setSelectedVendorFilter(vendorId);
   };
 
   const handleDeleteVendor = (vendorId) => {
@@ -159,161 +197,227 @@ const Vendors = () => {
     });
   };
 
+  const handleViewBillDetails = (bill) => {
+    setSelectedBill(bill);
+  };
+
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">
-          {activeTab === 'vendors' ? 'Vendors' : 'Purchase Bills'}
-        </h1>
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="outline"
-            onClick={() => setActiveTab(activeTab === 'vendors' ? 'bills' : 'vendors')}
-          >
-            {activeTab === 'vendors' ? 'View Purchase Bills' : 'View Vendors'}
-          </Button>
-          <Button 
-            onClick={() => activeTab === 'vendors' 
-              ? setIsVendorDialogOpen(true) 
-              : setIsPurchaseBillDialogOpen(true)}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            {activeTab === 'vendors' ? 'Add Vendor' : 'Add Purchase Bill'}
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-center">
-            <CardTitle>{activeTab === 'vendors' ? 'Vendor List' : 'Purchase Bills'}</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input 
-                  placeholder={`Search ${activeTab === 'vendors' ? 'vendors' : 'bills'}...`}
-                  className="pl-10 w-[250px]" 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
-            </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <div className="flex justify-between items-center">
+          <TabsList>
+            <TabsTrigger value="vendors">Vendors</TabsTrigger>
+            <TabsTrigger value="bills">Purchase Bills</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-4">
+            <Button 
+              onClick={() => activeTab === 'vendors' 
+                ? setIsVendorDialogOpen(true) 
+                : setIsPurchaseBillDialogOpen(true)}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              {activeTab === 'vendors' ? 'Add Vendor' : 'Add Purchase Bill'}
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          {activeTab === 'vendors' ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Total Purchases</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredVendors.map((vendor) => (
-                  <TableRow key={vendor.id}>
-                    <TableCell className="font-medium">{vendor.name}</TableCell>
-                    <TableCell>{vendor.contact}</TableCell>
-                    <TableCell>{vendor.email}</TableCell>
-                    <TableCell>{vendor.phone}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        vendor.status === 'Active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {vendor.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>{vendor.totalPurchases}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenVendorDetails(vendor)}>
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteVendor(vendor.id)}>
-                            <Trash className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+        </div>
+
+        <TabsContent value="vendors" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle>Vendor List</CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input 
+                      placeholder="Search vendors..."
+                      className="pl-10 w-[250px]" 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <Button variant="outline" size="icon">
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Total Purchases</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Bill ID</TableHead>
-                  <TableHead>Vendor</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBills.map((bill) => (
-                  <TableRow key={bill.id}>
-                    <TableCell className="font-medium">{bill.id}</TableCell>
-                    <TableCell>{bill.vendorName}</TableCell>
-                    <TableCell>{bill.billDate}</TableCell>
-                    <TableCell>{bill.amount}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        bill.status === 'Paid' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {bill.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
+                </TableHeader>
+                <TableBody>
+                  {filteredVendors.map((vendor) => (
+                    <TableRow key={vendor.id}>
+                      <TableCell className="font-medium">{vendor.name}</TableCell>
+                      <TableCell>{vendor.contact}</TableCell>
+                      <TableCell>{vendor.email}</TableCell>
+                      <TableCell>{vendor.phone}</TableCell>
+                      <TableCell>
+                        <Badge variant={vendor.status === 'Active' ? 'default' : 'secondary'}>
+                          {vendor.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{vendor.totalPurchases}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleViewVendorBills(vendor.id)}
+                          >
+                            <FileBarChart className="h-4 w-4 mr-1" />
+                            Bills
                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setSelectedBill(bill)}>
-                            <FileText className="mr-2 h-4 w-4" />
-                            View Bill
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Download className="mr-2 h-4 w-4" />
-                            Download
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteBill(bill.id)}>
-                            <Trash className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenVendorDetails(vendor)}>
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteVendor(vendor.id)}>
+                                <Trash className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="bills">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <CardTitle>Purchase Bills</CardTitle>
+                  {selectedVendorFilter !== 'all' && (
+                    <div className="flex items-center">
+                      <Badge className="mr-2">
+                        For: {mockVendors.find(v => v.id === selectedVendorFilter)?.name}
+                      </Badge>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 px-2"
+                        onClick={() => setSelectedVendorFilter('all')}
+                      >
+                        <ArrowLeftRight className="h-3 w-3 mr-1" />
+                        Show All
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input 
+                      placeholder="Search bills..."
+                      className="pl-10 w-[250px]" 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline">
+                        <ListFilter className="h-4 w-4 mr-2" />
+                        Filter by Vendor
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[200px]">
+                      <DropdownMenuItem onClick={() => setSelectedVendorFilter('all')}>
+                        All Vendors
+                      </DropdownMenuItem>
+                      {mockVendors.map(vendor => (
+                        <DropdownMenuItem 
+                          key={vendor.id} 
+                          onClick={() => setSelectedVendorFilter(vendor.id)}
+                        >
+                          {vendor.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bill ID</TableHead>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {filteredBills.map((bill) => (
+                    <TableRow key={bill.id}>
+                      <TableCell className="font-medium">{bill.id}</TableCell>
+                      <TableCell>{bill.invoiceNumber || 'N/A'}</TableCell>
+                      <TableCell>{bill.vendorName}</TableCell>
+                      <TableCell>{bill.billDate}</TableCell>
+                      <TableCell>{bill.amount}</TableCell>
+                      <TableCell>
+                        <Badge variant={bill.status === 'Paid' ? 'success' : 'warning'}>
+                          {bill.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewBillDetails(bill)}>
+                              <FileText className="mr-2 h-4 w-4" />
+                              View Bill
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Download className="mr-2 h-4 w-4" />
+                              Download
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteBill(bill.id)}>
+                              <Trash className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Add Vendor Dialog */}
       <Dialog open={isVendorDialogOpen} onOpenChange={setIsVendorDialogOpen}>
@@ -360,7 +464,7 @@ const Vendors = () => {
 
       {/* Vendor Details Dialog */}
       <Dialog open={isVendorDetailsOpen} onOpenChange={setIsVendorDetailsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Vendor Details</DialogTitle>
           </DialogHeader>
@@ -368,6 +472,7 @@ const Vendors = () => {
             <VendorDetails 
               vendor={selectedVendor} 
               purchaseHistory={mockPurchaseBills.filter(bill => bill.vendorId === selectedVendor.id)}
+              onViewBillDetails={handleViewBillDetails}
             />
           )}
         </DialogContent>
@@ -391,21 +496,39 @@ const Vendors = () => {
                   <p>{selectedBill.vendorName}</p>
                 </div>
                 <div>
+                  <p className="text-sm font-medium text-gray-500">Invoice Number</p>
+                  <p>{selectedBill.invoiceNumber || 'N/A'}</p>
+                </div>
+                <div>
                   <p className="text-sm font-medium text-gray-500">Bill Date</p>
                   <p>{selectedBill.billDate}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Status</p>
-                  <p>{selectedBill.status}</p>
+                  <p className="flex items-center gap-2">
+                    <Badge variant={selectedBill.status === 'Paid' ? 'success' : 'warning'}>
+                      {selectedBill.status}
+                    </Badge>
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Amount</p>
                   <p className="font-semibold">{selectedBill.amount}</p>
                 </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Payment Method</p>
+                  <p>{selectedBill.paymentMethod || 'N/A'}</p>
+                </div>
                 {selectedBill.paymentDate && (
                   <div>
                     <p className="text-sm font-medium text-gray-500">Payment Date</p>
                     <p>{selectedBill.paymentDate}</p>
+                  </div>
+                )}
+                {selectedBill.deliveryDate && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Delivery Date</p>
+                    <p>{selectedBill.deliveryDate}</p>
                   </div>
                 )}
               </div>

@@ -7,7 +7,10 @@ import {
   Phone, 
   MapPin,
   ShoppingCart,
-  CalendarDays
+  CalendarDays,
+  CreditCard,
+  FileText,
+  Clock
 } from 'lucide-react';
 import {
   Table,
@@ -20,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 interface Vendor {
   id: string;
@@ -38,14 +42,25 @@ interface PurchaseBill {
   billDate: string;
   amount: string;
   status: string;
+  paymentMethod?: string;
+  paymentDate?: string;
+  deliveryDate?: string;
+  invoiceNumber?: string;
+  items?: {
+    name: string;
+    quantity: number;
+    price: string;
+    total: string;
+  }[];
 }
 
 interface VendorDetailsProps {
   vendor: Vendor;
   purchaseHistory: PurchaseBill[];
+  onViewBillDetails?: (bill: PurchaseBill) => void;
 }
 
-const VendorDetails = ({ vendor, purchaseHistory }: VendorDetailsProps) => {
+const VendorDetails = ({ vendor, purchaseHistory, onViewBillDetails }: VendorDetailsProps) => {
   return (
     <div className="space-y-6">
       <Card>
@@ -56,13 +71,9 @@ const VendorDetails = ({ vendor, purchaseHistory }: VendorDetailsProps) => {
                 <Building className="h-5 w-5 text-[#EC008C]" />
                 <h3 className="text-xl font-semibold">{vendor.name}</h3>
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs ${
-                vendor.status === 'Active' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
+              <Badge variant={vendor.status === 'Active' ? 'default' : 'secondary'}>
                 {vendor.status}
-              </span>
+              </Badge>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Total Purchases</p>
@@ -114,37 +125,73 @@ const VendorDetails = ({ vendor, purchaseHistory }: VendorDetailsProps) => {
         </div>
         
         {purchaseHistory.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Bill ID</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {purchaseHistory.map((bill) => (
-                <TableRow key={bill.id}>
-                  <TableCell className="font-medium">{bill.id}</TableCell>
-                  <TableCell className="flex items-center gap-1">
-                    <CalendarDays className="h-3 w-3 text-gray-400" />
-                    {bill.billDate}
-                  </TableCell>
-                  <TableCell>{bill.amount}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      bill.status === 'Paid' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {bill.status}
-                    </span>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Bill ID</TableHead>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead>Delivery</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {purchaseHistory.map((bill) => (
+                  <TableRow key={bill.id}>
+                    <TableCell className="font-medium">{bill.id}</TableCell>
+                    <TableCell>{bill.invoiceNumber || 'N/A'}</TableCell>
+                    <TableCell className="flex items-center gap-1">
+                      <CalendarDays className="h-3 w-3 text-gray-400" />
+                      {bill.billDate}
+                    </TableCell>
+                    <TableCell>{bill.amount}</TableCell>
+                    <TableCell>
+                      <Badge variant={bill.status === 'Paid' ? 'success' : 'warning'}>
+                        {bill.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-500">
+                          {bill.paymentMethod || 'N/A'}
+                        </span>
+                        {bill.paymentDate && (
+                          <span className="text-xs flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {bill.paymentDate}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {bill.deliveryDate ? (
+                        <span className="text-xs flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {bill.deliveryDate}
+                        </span>
+                      ) : (
+                        'Pending'
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onViewBillDetails && onViewBillDetails(bill)}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : (
           <div className="text-center py-8 border rounded-md">
             <p className="text-gray-500">No purchase history found for this vendor.</p>
