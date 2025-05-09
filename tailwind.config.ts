@@ -65,8 +65,8 @@ export default {
 				},
 				// E-commerce admin specific colors
 				ecommerce: {
-					primary: '#FF0B8A', // The pink color from the sidebar active item
-					chart: '#FF0B8A', // The chart line color
+					primary: '#EC008C', // Updated to the requested primary color
+					chart: '#EC008C', // Updated to match primary
 					positive: '#22C55E', // Green for positive changes
 					negative: '#EF4444', // Red for negative changes
 				}
