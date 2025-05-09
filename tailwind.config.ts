@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// E-commerce admin specific colors
+				ecommerce: {
+					primary: '#FF0B8A', // The pink color from the sidebar active item
+					chart: '#FF0B8A', // The chart line color
+					positive: '#22C55E', // Green for positive changes
+					negative: '#EF4444', // Red for negative changes
 				}
 			},
 			borderRadius: {
