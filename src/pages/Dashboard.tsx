@@ -4,6 +4,9 @@ import MetricCard from '@/components/MetricCard';
 import RevenueChart from '@/components/RevenueChart';
 import ProductTable from '@/components/ProductTable';
 import { Product } from '@/components/ProductTable';
+import DeliveryAutomationFlow from '@/components/DeliveryAutomationFlow';
+import { Card, CardContent } from '@/components/ui/card';
+import { TrendingUp, Users, ShoppingBag, CreditCard } from 'lucide-react';
 
 // Sample data for the metrics
 const revenueChartData = [
@@ -90,11 +93,29 @@ const topProducts: Product[] = [
 
 const Dashboard: React.FC = () => {
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <Card className="border-none shadow-none bg-gradient-to-r from-pink-50 to-pink-100 mb-6">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Welcome back, Admin!</h2>
+              <p className="text-gray-600 mt-1">Here's what's happening with your store today.</p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <button className="bg-[#EC008C] text-white px-4 py-2 rounded-lg hover:bg-[#D1007D] transition-colors flex items-center">
+                <span>Generate Report</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <MetricCard 
           title="Revenue" 
           value="$7,825" 
@@ -124,14 +145,16 @@ const Dashboard: React.FC = () => {
       </div>
       
       {/* Revenue Chart */}
-      <div className="mb-6">
-        <RevenueChart data={revenueData} currentRevenue={315060} />
-      </div>
+      <Card>
+        <CardContent className="p-5">
+          <RevenueChart data={revenueData} currentRevenue={315060} />
+        </CardContent>
+      </Card>
       
-      {/* Product Tables */}
+      {/* Product Tables and Flow Diagram */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ProductTable title="Top 5 Products" products={topProducts} />
-        <ProductTable title="Top 5 Categories" products={topProducts} />
+        <ProductTable title="Top Products" products={topProducts} />
+        <DeliveryAutomationFlow />
       </div>
     </div>
   );
