@@ -302,17 +302,18 @@ const Orders: React.FC = () => {
     toast({
       title: `Order ${orderId} Delivered`,
       description: `Delivery completed successfully`,
-      variant: "success",
+      variant: "default", // Fixed: Changed from "success" to "default"
     });
   };
 
   // Handle failed delivery
   const handleFailedDelivery = (orderId: string) => {
+    // Fixed: Type safety for deliveryStatus
     const updatedOrders = ordersData.map(order => {
       if (order.id === orderId) {
         return {
           ...order,
-          deliveryStatus: 'Failed Delivery',
+          deliveryStatus: 'Failed Delivery' as const, // Using const assertion to fix type
           deliveryNotes: deliveryNotes || 'Delivery attempt failed'
         };
       }
