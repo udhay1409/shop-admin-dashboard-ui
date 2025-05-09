@@ -13,7 +13,8 @@ import {
   Receipt, 
   BarChart2, 
   PocketKnife, 
-  Settings 
+  Settings,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -76,6 +77,7 @@ const AdminSidebar = () => {
             <SidebarItem to="/transaction-logs" icon={Receipt} text="Transaction Logs" />
             <SidebarItem to="/reports" icon={BarChart2} text="Reports" />
             <SidebarItem to="/pos" icon={PocketKnife} text="Pos" />
+            <SidebarItem to="/payments" icon={CreditCard} text="Payments" />
             <SidebarItem to="/settings" icon={Settings} text="Settings" />
           </ul>
         </div>
