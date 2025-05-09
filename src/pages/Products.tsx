@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { PlusCircle, Search, Filter, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -216,7 +215,7 @@ const Products: React.FC = () => {
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all-categories">All Categories</SelectItem>
               {categories.map(category => (
                 <SelectItem key={category} value={category}>{category}</SelectItem>
               ))}
@@ -228,7 +227,7 @@ const Products: React.FC = () => {
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all-status">All Status</SelectItem>
               <SelectItem value="Active">Active</SelectItem>
               <SelectItem value="Draft">Draft</SelectItem>
               <SelectItem value="Inactive">Inactive</SelectItem>

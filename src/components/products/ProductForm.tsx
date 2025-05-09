@@ -170,11 +170,15 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map(category => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
+                      {categories.length > 0 ? (
+                        categories.map(category => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-categories">No categories available</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
