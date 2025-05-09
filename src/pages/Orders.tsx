@@ -47,9 +47,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Check, X, Search, FilterIcon, CalendarIcon, CheckCircle } from "lucide-react";
+import { Eye, Search, FilterIcon, CalendarIcon, CheckCircle, ArrowRight, Package, Truck, Check, X, Clock, MapPin, PackageOpen } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
+// Enhanced Order Type with Delivery Information
 interface Order {
   id: string;
   date: string;
@@ -58,6 +59,11 @@ interface Order {
   total: string;
   payment: string;
   status: "Pending" | "Packed" | "Shipped" | "Delivered" | "Cancelled" | "Exchanged";
+  deliveryStatus?: "Awaiting Dispatch" | "Out for Delivery" | "Delivered" | "Failed Delivery" | null;
+  estimatedDelivery?: string | null;
+  deliveryTrackingId?: string | null;
+  deliveryCarrier?: string | null;
+  deliveryNotes?: string | null;
   expectedAction: string;
   address?: string;
   phone?: string;
@@ -71,10 +77,12 @@ const Orders: React.FC = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
-  
-  // More varied sample order data with additional fields
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+
+  // Enhanced sample order data with delivery information
   const [ordersData, setOrdersData] = useState<Order[]>([
     {
       id: 'ORD1001',
@@ -96,6 +104,8 @@ const Orders: React.FC = () => {
       total: '₹2,499',
       payment: 'Credit Card',
       status: 'Packed',
+      deliveryStatus: 'Awaiting Dispatch',
+      estimatedDelivery: '12 May 2025',
       expectedAction: 'Ready for shipping',
       address: '456 Park Street, Mumbai, Maharashtra',
       phone: '+91 87654 32109'
@@ -108,6 +118,10 @@ const Orders: React.FC = () => {
       total: '₹3,999',
       payment: 'COD',
       status: 'Shipped',
+      deliveryStatus: 'Out for Delivery',
+      estimatedDelivery: '12 May 2025',
+      deliveryTrackingId: 'TRACK123456',
+      deliveryCarrier: 'Express Delivery',
       expectedAction: 'Delivery expected May 12',
       address: '789 Gandhi Road, Ahmedabad, Gujarat',
       phone: '+91 76543 21098'
@@ -120,6 +134,11 @@ const Orders: React.FC = () => {
       total: '₹8,499',
       payment: 'UPI - PhonePe',
       status: 'Delivered',
+      deliveryStatus: 'Delivered',
+      estimatedDelivery: '08 May 2025',
+      deliveryTrackingId: 'TRACK654321',
+      deliveryCarrier: 'Premium Courier',
+      deliveryNotes: 'Left with security',
       expectedAction: 'Delivered on May 8',
       address: '234 Jubilee Hills, Hyderabad, Telangana',
       phone: '+91 65432 10987'
@@ -168,36 +187,52 @@ const Orders: React.FC = () => {
       total: '₹5,999',
       payment: 'Credit Card',
       status: 'Packed',
+      deliveryStatus: 'Awaiting Dispatch',
+      estimatedDelivery: '15 May 2025',
       expectedAction: 'Ready for shipping',
       address: '765 Koregaon Park, Pune, Maharashtra',
       phone: '+91 21098 76543'
     }
   ]);
 
-  // Handle order status update
-  const updateOrderStatus = (orderId: string, newStatus: Order['status']) => {
+  // Handle order status update with enhanced delivery tracking
+  const updateOrderStatus = (orderId: string, newStatus: Order['status'], deliveryInfo?: Partial<Order>) => {
     const updatedOrders = ordersData.map(order => {
       if (order.id === orderId) {
         let expectedAction = '';
+        let deliveryStatus = order.deliveryStatus;
         
         switch(newStatus) {
           case 'Packed':
             expectedAction = 'Ready for shipping';
+            deliveryStatus = 'Awaiting Dispatch';
             break;
           case 'Shipped':
             expectedAction = 'Delivery expected in 3-5 days';
+            deliveryStatus = 'Out for Delivery';
             break;
           case 'Delivered':
             expectedAction = 'Delivered successfully';
+            deliveryStatus = 'Delivered';
             break;
           case 'Cancelled':
             expectedAction = 'Refund initiated';
+            deliveryStatus = null;
             break;
           default:
             expectedAction = order.expectedAction;
         }
         
-        return { ...order, status: newStatus, expectedAction };
+        return { 
+          ...order, 
+          status: newStatus, 
+          expectedAction,
+          deliveryStatus: deliveryInfo?.deliveryStatus || deliveryStatus,
+          estimatedDelivery: deliveryInfo?.estimatedDelivery || order.estimatedDelivery,
+          deliveryTrackingId: deliveryInfo?.deliveryTrackingId || order.deliveryTrackingId,
+          deliveryCarrier: deliveryInfo?.deliveryCarrier || order.deliveryCarrier,
+          deliveryNotes: deliveryInfo?.deliveryNotes || order.deliveryNotes
+        };
       }
       return order;
     });
@@ -227,6 +262,78 @@ const Orders: React.FC = () => {
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
     setIsViewDialogOpen(true);
+  };
+
+  // Handle shipping order
+  const handleShipOrder = (orderId: string) => {
+    // Generate a random tracking ID
+    const trackingId = `TRACK${Math.floor(100000 + Math.random() * 900000)}`;
+    
+    // Calculate estimated delivery (5 days from now)
+    const today = new Date();
+    const deliveryDate = new Date(today);
+    deliveryDate.setDate(today.getDate() + 5);
+    const formattedDeliveryDate = `${deliveryDate.getDate()} ${deliveryDate.toLocaleString('default', { month: 'short' })} ${deliveryDate.getFullYear()}`;
+    
+    updateOrderStatus(orderId, 'Shipped', {
+      deliveryStatus: 'Out for Delivery',
+      estimatedDelivery: formattedDeliveryDate,
+      deliveryTrackingId: trackingId,
+      deliveryCarrier: 'Express Delivery'
+    });
+    
+    toast({
+      title: `Order ${orderId} Shipped`,
+      description: `Tracking ID: ${trackingId} | Est. Delivery: ${formattedDeliveryDate}`,
+      variant: "default",
+    });
+  };
+
+  // Handle delivery completion
+  const handleDeliveryComplete = (orderId: string) => {
+    updateOrderStatus(orderId, 'Delivered', {
+      deliveryStatus: 'Delivered',
+      deliveryNotes: deliveryNotes
+    });
+    
+    setIsDeliveryDialogOpen(false);
+    setDeliveryNotes('');
+    
+    toast({
+      title: `Order ${orderId} Delivered`,
+      description: `Delivery completed successfully`,
+      variant: "success",
+    });
+  };
+
+  // Handle failed delivery
+  const handleFailedDelivery = (orderId: string) => {
+    const updatedOrders = ordersData.map(order => {
+      if (order.id === orderId) {
+        return {
+          ...order,
+          deliveryStatus: 'Failed Delivery',
+          deliveryNotes: deliveryNotes || 'Delivery attempt failed'
+        };
+      }
+      return order;
+    });
+    
+    setOrdersData(updatedOrders);
+    setIsDeliveryDialogOpen(false);
+    setDeliveryNotes('');
+    
+    toast({
+      title: `Order ${orderId} Delivery Failed`,
+      description: `A new delivery attempt will be scheduled`,
+      variant: "destructive",
+    });
+  };
+
+  // Open delivery confirmation dialog
+  const openDeliveryDialog = (order: Order) => {
+    setSelectedOrder(order);
+    setIsDeliveryDialogOpen(true);
   };
 
   // Filter orders based on active tab, search query, and additional filters
@@ -282,6 +389,23 @@ const Orders: React.FC = () => {
         return 'bg-indigo-100 text-indigo-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getDeliveryStatusBadgeClass = (status: string | null | undefined) => {
+    if (!status) return '';
+    
+    switch(status) {
+      case 'Awaiting Dispatch':
+        return 'bg-blue-50 text-blue-700';
+      case 'Out for Delivery':
+        return 'bg-amber-50 text-amber-700';
+      case 'Delivered':
+        return 'bg-green-50 text-green-700';
+      case 'Failed Delivery':
+        return 'bg-red-50 text-red-700';
+      default:
+        return 'bg-gray-50 text-gray-700';
     }
   };
 
@@ -430,8 +554,11 @@ const Orders: React.FC = () => {
             <OrdersTable 
               orders={paginatedOrders} 
               getStatusBadgeClass={getStatusBadgeClass}
+              getDeliveryStatusBadgeClass={getDeliveryStatusBadgeClass}
               onViewOrder={handleViewOrder}
               onConfirmOrder={handleConfirmOrder}
+              onShipOrder={handleShipOrder}
+              onDeliveryUpdate={openDeliveryDialog}
               onCancelOrder={(order) => {
                 setSelectedOrder(order);
                 setIsCancelDialogOpen(true);
@@ -443,8 +570,11 @@ const Orders: React.FC = () => {
               <OrdersTable 
                 orders={paginatedOrders} 
                 getStatusBadgeClass={getStatusBadgeClass}
+                getDeliveryStatusBadgeClass={getDeliveryStatusBadgeClass}
                 onViewOrder={handleViewOrder}
                 onConfirmOrder={handleConfirmOrder}
+                onShipOrder={handleShipOrder}
+                onDeliveryUpdate={openDeliveryDialog}
                 onCancelOrder={(order) => {
                   setSelectedOrder(order);
                   setIsCancelDialogOpen(true);
@@ -564,15 +694,64 @@ const Orders: React.FC = () => {
                   <span>{selectedOrder.payment}</span>
                 </div>
                 
+                {selectedOrder.deliveryStatus && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">Delivery Status</span>
+                      <span className={`text-sm px-2 py-1 rounded-md ${getDeliveryStatusBadgeClass(selectedOrder.deliveryStatus)}`}>
+                        {selectedOrder.deliveryStatus}
+                      </span>
+                    </div>
+                    
+                    {selectedOrder.estimatedDelivery && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Est. Delivery</span>
+                        <span>{selectedOrder.estimatedDelivery}</span>
+                      </div>
+                    )}
+                    
+                    {selectedOrder.deliveryTrackingId && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Tracking ID</span>
+                        <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                          {selectedOrder.deliveryTrackingId}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {selectedOrder.deliveryCarrier && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Carrier</span>
+                        <span>{selectedOrder.deliveryCarrier}</span>
+                      </div>
+                    )}
+                    
+                    {selectedOrder.deliveryNotes && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Delivery Notes</span>
+                        <span className="text-right max-w-[60%]">{selectedOrder.deliveryNotes}</span>
+                      </div>
+                    )}
+                  </>
+                )}
+                
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Next Action</span>
                   <span>{selectedOrder.expectedAction}</span>
                 </div>
               </div>
+              
+              {/* Order Timeline */}
+              {selectedOrder.status !== 'Pending' && selectedOrder.status !== 'Cancelled' && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <h4 className="text-sm font-medium mb-3">Order Timeline</h4>
+                  <OrderTimeline order={selectedOrder} />
+                </div>
+              )}
             </div>
           )}
           
-          <DialogFooter className="sm:justify-start">
+          <DialogFooter className="sm:justify-start gap-2">
             <Button 
               variant="default" 
               className="bg-pink-500 hover:bg-pink-600"
@@ -593,7 +772,81 @@ const Orders: React.FC = () => {
                 Confirm Order
               </Button>
             )}
+            
+            {selectedOrder && selectedOrder.status === 'Packed' && (
+              <Button 
+                variant="outline"
+                className="border-amber-500 text-amber-600 hover:bg-amber-50"
+                onClick={() => {
+                  handleShipOrder(selectedOrder.id);
+                  setIsViewDialogOpen(false);
+                }}
+              >
+                <Truck className="mr-2 h-4 w-4" />
+                Ship Order
+              </Button>
+            )}
+            
+            {selectedOrder && selectedOrder.status === 'Shipped' && (
+              <Button 
+                variant="outline"
+                className="border-green-500 text-green-600 hover:bg-green-50"
+                onClick={() => {
+                  openDeliveryDialog(selectedOrder);
+                  setIsViewDialogOpen(false);
+                }}
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Mark as Delivered
+              </Button>
+            )}
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delivery Status Update Dialog */}
+      <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Delivery Status</DialogTitle>
+            <DialogDescription>
+              {selectedOrder?.id} - {selectedOrder?.customerName}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="deliveryNotes" className="text-sm font-medium">
+                Delivery Notes
+              </label>
+              <Input
+                id="deliveryNotes"
+                placeholder="Add notes about the delivery..."
+                value={deliveryNotes}
+                onChange={(e) => setDeliveryNotes(e.target.value)}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                variant="outline" 
+                className="border-red-200 text-red-600 hover:bg-red-50"
+                onClick={() => selectedOrder && handleFailedDelivery(selectedOrder.id)}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Failed Delivery
+              </Button>
+              
+              <Button 
+                variant="default"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => selectedOrder && handleDeliveryComplete(selectedOrder.id)}
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Delivered
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -625,19 +878,92 @@ const Orders: React.FC = () => {
   );
 };
 
+// Order Timeline Component
+interface OrderTimelineProps {
+  order: Order;
+}
+
+const OrderTimeline: React.FC<OrderTimelineProps> = ({ order }) => {
+  // Define timeline events based on order status
+  const timelineEvents = [];
+  
+  // Always add confirmation step
+  timelineEvents.push({
+    status: 'Confirmed',
+    icon: <Package className="h-4 w-4" />,
+    date: order.date,
+    isCompleted: true
+  });
+  
+  // Add packing step
+  timelineEvents.push({
+    status: 'Packed',
+    icon: <PackageOpen className="h-4 w-4" />,
+    date: order.date, // In a real app, you'd have actual timestamps
+    isCompleted: ['Packed', 'Shipped', 'Delivered'].includes(order.status)
+  });
+  
+  // Add shipping step
+  timelineEvents.push({
+    status: 'Shipped',
+    icon: <Truck className="h-4 w-4" />,
+    date: order.deliveryStatus === 'Out for Delivery' || order.status === 'Delivered' ? 
+          order.date : undefined,
+    isCompleted: ['Shipped', 'Delivered'].includes(order.status)
+  });
+  
+  // Add delivery step
+  timelineEvents.push({
+    status: 'Delivered',
+    icon: <MapPin className="h-4 w-4" />,
+    date: order.status === 'Delivered' ? order.date : undefined,
+    isCompleted: order.status === 'Delivered'
+  });
+  
+  return (
+    <div className="space-y-3">
+      {timelineEvents.map((event, index) => (
+        <div key={index} className="flex items-start">
+          <div className={`flex-shrink-0 h-7 w-7 rounded-full flex items-center justify-center ${
+            event.isCompleted ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+          }`}>
+            {event.icon}
+          </div>
+          <div className="ml-3">
+            <p className={`text-sm font-medium ${
+              event.isCompleted ? 'text-green-600' : 'text-gray-500'
+            }`}>
+              {event.status}
+            </p>
+            {event.date && (
+              <p className="text-xs text-gray-500">{event.date}</p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 interface OrdersTableProps {
   orders: Order[];
   getStatusBadgeClass: (status: string) => string;
+  getDeliveryStatusBadgeClass: (status: string | null | undefined) => string;
   onViewOrder: (order: Order) => void;
   onConfirmOrder: (orderId: string) => void;
+  onShipOrder: (orderId: string) => void;
+  onDeliveryUpdate: (order: Order) => void;
   onCancelOrder: (order: Order) => void;
 }
 
 const OrdersTable: React.FC<OrdersTableProps> = ({ 
   orders, 
   getStatusBadgeClass,
+  getDeliveryStatusBadgeClass,
   onViewOrder,
   onConfirmOrder,
+  onShipOrder,
+  onDeliveryUpdate,
   onCancelOrder
 }) => {
   return (
@@ -652,6 +978,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
             <TableHead className="font-semibold">Total</TableHead>
             <TableHead className="font-semibold">Payment</TableHead>
             <TableHead className="font-semibold">Status</TableHead>
+            <TableHead className="font-semibold">Delivery</TableHead>
             <TableHead className="font-semibold">Next Action</TableHead>
             <TableHead className="font-semibold text-right">Action</TableHead>
           </TableRow>
@@ -671,6 +998,15 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                     {order.status}
                   </span>
                 </TableCell>
+                <TableCell>
+                  {order.deliveryStatus ? (
+                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${getDeliveryStatusBadgeClass(order.deliveryStatus)}`}>
+                      {order.deliveryStatus}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-400">-</span>
+                  )}
+                </TableCell>
                 <TableCell>{order.expectedAction}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
@@ -683,6 +1019,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                       <Eye className="h-4 w-4" />
                       <span className="sr-only">View</span>
                     </Button>
+                    
                     {order.status === 'Pending' && (
                       <>
                         <Button 
@@ -690,7 +1027,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                           className="h-8 bg-pink-500 hover:bg-pink-600"
                           onClick={() => onConfirmOrder(order.id)}
                         >
-                          <Check className="h-4 w-4" />
+                          <ArrowRight className="h-4 w-4" />
                           <span className="sr-only">Confirm</span>
                         </Button>
                         <Button 
@@ -704,13 +1041,37 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                         </Button>
                       </>
                     )}
+                    
+                    {order.status === 'Packed' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="h-8 border-amber-300 hover:bg-amber-50 hover:text-amber-600"
+                        onClick={() => onShipOrder(order.id)}
+                      >
+                        <Truck className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Ship</span>
+                      </Button>
+                    )}
+                    
+                    {order.status === 'Shipped' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="h-8 border-green-300 hover:bg-green-50 hover:text-green-600"
+                        onClick={() => onDeliveryUpdate(order)}
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Deliver</span>
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={9} className="text-center py-6 text-gray-500">
+              <TableCell colSpan={10} className="text-center py-6 text-gray-500">
                 No orders found. Try changing your search or filters.
               </TableCell>
             </TableRow>
@@ -722,3 +1083,4 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
 };
 
 export default Orders;
+
