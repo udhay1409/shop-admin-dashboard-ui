@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -205,12 +204,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       
       if (error) {
-        toast({
-          title: "Login failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return false;
+        // Properly throw the error to be caught in the component
+        throw error;
       }
       
       if (data.user) {
@@ -266,7 +261,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Redirect based on role
         if (role === 'admin') {
-          navigate('/');
+          navigate('/dashboard');
         } else {
           navigate('/store');
         }
@@ -275,14 +270,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      toast({
-        title: "Login failed",
-        description: "An error occurred during login.",
-        variant: "destructive",
-      });
-      return false;
+      // Re-throw the error to be caught in the component
+      throw error;
     }
   };
 
@@ -358,7 +349,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         title: "Logged out",
         description: "You have been logged out successfully.",
       });
-      navigate('/store');
+      navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
     }

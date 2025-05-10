@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -25,6 +25,9 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import VerifyEmail from '@/components/auth/VerifyEmail';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -38,6 +41,9 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { login, isAuthenticated, userRole, isLoading } = useAuth();
+  const [showVerification, setShowVerification] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Check if we have a redirect path
   const from = location.state?.from?.pathname || '/';
@@ -63,21 +69,38 @@ const Login = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
+      setErrorMessage(null);
       const success = await login(values.email, values.password);
+      
       if (success) {
         toast({
           title: 'Login successful',
           description: 'Welcome back!',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      toast({
-        title: 'Login failed',
-        description: 'An unexpected error occurred.',
-        variant: 'destructive',
-      });
+      
+      if (error.message && error.message.includes('Email not confirmed')) {
+        setUserEmail(values.email);
+        setShowVerification(true);
+      } else {
+        setErrorMessage(error.message || 'An unexpected error occurred.');
+        toast({
+          title: 'Login failed',
+          description: error.message || 'An unexpected error occurred.',
+          variant: 'destructive',
+        });
+      }
     }
+  };
+
+  const handleVerificationComplete = () => {
+    toast({
+      title: 'Verification complete',
+      description: 'You can now log in',
+    });
+    setShowVerification(false);
   };
 
   // If still loading, show a spinner
@@ -87,6 +110,11 @@ const Login = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#EC008C]"></div>
       </div>
     );
+  }
+
+  // If we need to show the email verification component
+  if (showVerification) {
+    return <VerifyEmail email={userEmail} onComplete={handleVerificationComplete} />;
   }
 
   return (
@@ -99,6 +127,14 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {errorMessage && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField

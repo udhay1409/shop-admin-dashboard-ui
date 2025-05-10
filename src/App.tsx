@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -136,14 +137,13 @@ function App() {
         
         if (error && error.message.includes('Invalid login credentials')) {
           // If login failed, create the admin user
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
             email: 'kansha@mntfuture.com',
             password: '123456',
-            options: {
-              data: {
-                first_name: 'Admin',
-                last_name: 'User'
-              }
+            email_confirm: true, // Automatically confirm email
+            user_metadata: {
+              first_name: 'Admin',
+              last_name: 'User'
             }
           });
           
@@ -167,7 +167,9 @@ function App() {
         }
         
         // Sign out after checking/creating admin
-        await supabase.auth.signOut();
+        if (data?.user) {
+          await supabase.auth.signOut();
+        }
       } catch (error) {
         console.error('Error in admin user setup:', error);
       }
