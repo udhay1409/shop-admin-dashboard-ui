@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +20,12 @@ import {
   X,
   ChevronRight,
   ArrowRight,
-  Star
+  Star,
+  LayoutDashboard
 } from 'lucide-react';
 import useProductInventory from '@/hooks/useProductInventory';
+import AdminBar from '@/components/AdminBar';
+import { Link } from 'react-router-dom';
 
 const categories = [
   "New Arrivals",
@@ -41,6 +43,8 @@ const StoreFront: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { products } = useProductInventory();
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  // Simple admin check (in a real app, use proper auth)
+  const isAdmin = true; // Replace with actual auth logic
   
   useEffect(() => {
     // Get featured products from the product inventory
@@ -59,6 +63,9 @@ const StoreFront: React.FC = () => {
   
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Admin Bar */}
+      <AdminBar isAdmin={isAdmin} />
+      
       {/* Header */}
       <header className="sticky top-0 bg-white border-b z-30 shadow-sm">
         <div className="container mx-auto px-4">
@@ -121,6 +128,14 @@ const StoreFront: React.FC = () => {
               <Button variant="ghost" size="icon">
                 <User className="h-5 w-5" />
               </Button>
+              
+              {isAdmin && (
+                <Link to="/">
+                  <Button variant="outline" size="icon" className="ml-2" title="Admin Dashboard">
+                    <LayoutDashboard className="h-5 w-5" />
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
           
@@ -239,55 +254,79 @@ const StoreFront: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-bold">Featured Products</h2>
-            <Button variant="link" className="flex items-center text-pink-600">
-              View All <ArrowRight className="ml-1 h-4 w-4" />
-            </Button>
+            {isAdmin ? (
+              <div className="flex items-center gap-2">
+                <Link to="/products">
+                  <Button variant="outline" size="sm" className="text-pink-600 border-pink-600">
+                    Manage Products
+                  </Button>
+                </Link>
+                <Button variant="link" className="flex items-center text-pink-600">
+                  View All <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button variant="link" className="flex items-center text-pink-600">
+                View All <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            )}
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {featuredProducts.map(product => (
-              <Card key={product.id} className="group overflow-hidden border-none shadow-sm hover:shadow-md transition-all duration-200">
-                <div className="relative">
-                  <AspectRatio ratio={3/4}>
-                    <img 
-                      src={product.image} 
-                      alt={product.name}
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </AspectRatio>
-                  {product.isNew && (
-                    <Badge className="absolute top-2 left-2 bg-black text-white">New</Badge>
-                  )}
-                  {product.sale && (
-                    <Badge className="absolute top-2 left-2 bg-pink-600 text-white">Sale</Badge>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-90 py-2 px-3 transform translate-y-full group-hover:translate-y-0 transition-transform duration-200">
-                    <Button variant="outline" size="sm" className="w-full">
-                      Quick View
-                    </Button>
-                  </div>
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex items-center text-yellow-400 mb-2">
-                    <Star className="h-3.5 w-3.5 fill-current" />
-                    <Star className="h-3.5 w-3.5 fill-current" />
-                    <Star className="h-3.5 w-3.5 fill-current" />
-                    <Star className="h-3.5 w-3.5 fill-current" />
-                    <Star className="h-3.5 w-3.5" />
-                    <span className="text-xs text-gray-500 ml-1">(24)</span>
-                  </div>
-                  <h3 className="font-medium">{product.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-pink-600">${product.price.toFixed(2)}</span>
-                    {product.originalPrice && (
-                      <span className="text-gray-400 line-through text-sm">
-                        ${product.originalPrice.toFixed(2)}
-                      </span>
+            {featuredProducts.length > 0 ? (
+              featuredProducts.map(product => (
+                <Card key={product.id} className="group overflow-hidden border-none shadow-sm hover:shadow-md transition-all duration-200">
+                  <div className="relative">
+                    <AspectRatio ratio={3/4}>
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </AspectRatio>
+                    {product.isNew && (
+                      <Badge className="absolute top-2 left-2 bg-black text-white">New</Badge>
                     )}
+                    {product.sale && (
+                      <Badge className="absolute top-2 left-2 bg-pink-600 text-white">Sale</Badge>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-90 py-2 px-3 transform translate-y-full group-hover:translate-y-0 transition-transform duration-200">
+                      <Button variant="outline" size="sm" className="w-full">
+                        Quick View
+                      </Button>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <CardContent className="p-4">
+                    <div className="flex items-center text-yellow-400 mb-2">
+                      <Star className="h-3.5 w-3.5 fill-current" />
+                      <Star className="h-3.5 w-3.5 fill-current" />
+                      <Star className="h-3.5 w-3.5 fill-current" />
+                      <Star className="h-3.5 w-3.5 fill-current" />
+                      <Star className="h-3.5 w-3.5" />
+                      <span className="text-xs text-gray-500 ml-1">(24)</span>
+                    </div>
+                    <h3 className="font-medium">{product.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-pink-600">${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}</span>
+                      {product.originalPrice && (
+                        <span className="text-gray-400 line-through text-sm">
+                          ${product.originalPrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-4 text-center py-8">
+                <p className="text-gray-500">No products found.</p>
+                {isAdmin && (
+                  <Link to="/products" className="mt-4 inline-block">
+                    <Button>Add Products</Button>
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -386,6 +425,13 @@ const StoreFront: React.FC = () => {
               <p className="text-gray-400">
                 Your destination for trendy women's fashion and accessories.
               </p>
+              {isAdmin && (
+                <Link to="/" className="mt-4 inline-block">
+                  <Button variant="outline" size="sm" className="bg-transparent border-white hover:bg-white hover:text-gray-900 mt-4">
+                    Admin Dashboard
+                  </Button>
+                </Link>
+              )}
             </div>
             
             <div>

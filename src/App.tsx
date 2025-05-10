@@ -33,9 +33,24 @@ const isAuthenticated = () => {
   return true; // Set to false to test authentication flow
 };
 
+// Check if the user is an admin (in a real app, check roles)
+const isAdmin = () => {
+  // Replace with actual role check
+  return true;
+};
+
 // Protected route component
 const ProtectedRoute = ({ children }) => {
   if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+// Admin route component
+const AdminRoute = ({ children }) => {
+  if (!isAuthenticated() || !isAdmin()) {
     return <Navigate to="/login" replace />;
   }
 
@@ -51,6 +66,7 @@ const App = () => (
         <Routes>
           {/* Store Frontend */}
           <Route path="/store" element={<StoreFront />} />
+          <Route path="/store/*" element={<StoreFront />} />
 
           {/* Authentication routes */}
           <Route path="/login" element={<Login />} />
@@ -59,9 +75,9 @@ const App = () => (
 
           {/* Protected admin routes */}
           <Route path="/" element={
-            <ProtectedRoute>
+            <AdminRoute>
               <AdminLayout />
-            </ProtectedRoute>
+            </AdminRoute>
           }>
             <Route index element={<Dashboard />} />
             <Route path="orders" element={<Orders />} />
