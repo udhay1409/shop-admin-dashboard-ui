@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, Search, Filter, ArrowUpDown } from 'lucide-react';
+import { PlusCircle, Search, Filter, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,13 +24,17 @@ import DeleteProductDialog from '@/components/products/DeleteProductDialog';
 import { Product } from '@/types/product';
 import useProductInventory from '@/hooks/useProductInventory';
 import { useToast } from '@/hooks/use-toast';
+import { getCategories } from '@/services/productService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Products: React.FC = () => {
-  const { products, addProduct, updateProduct, deleteProduct } = useProductInventory();
+  const { products, addProduct, updateProduct, deleteProduct, loading, refreshProducts } = useProductInventory();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
+  const [categoryLoading, setCategoryLoading] = useState(true);
   
   // Dialog states
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
@@ -38,9 +42,24 @@ const Products: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Get unique categories for filter
-  const categories = Array.from(new Set(products.map(product => product.category)));
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setCategoryLoading(true);
+      try {
+        const fetchedCategories = await getCategories();
+        setCategories(fetchedCategories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      } finally {
+        setCategoryLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
   
   // Filter products
   const filteredProducts = products.filter(product => {
@@ -55,6 +74,20 @@ const Products: React.FC = () => {
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshProducts();
+      toast({
+        title: "Refreshed",
+        description: "Product list has been refreshed."
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Handle add new product
   const handleAddProduct = () => {
@@ -81,7 +114,7 @@ const Products: React.FC = () => {
     try {
       if (selectedProduct) {
         // Update existing product
-        const updatedProduct = updateProduct(selectedProduct.id, productData);
+        const updatedProduct = await updateProduct(selectedProduct.id, productData);
         if (updatedProduct) {
           toast({
             title: "Product updated",
@@ -90,7 +123,7 @@ const Products: React.FC = () => {
         }
       } else {
         // Create new product
-        const newProduct = addProduct({
+        const newProduct = await addProduct({
           name: productData.name || 'Untitled Product',
           price: productData.price || 0,
           stock: productData.stock || 0,
@@ -127,7 +160,7 @@ const Products: React.FC = () => {
     setIsDeleting(true);
     
     try {
-      const deleted = deleteProduct(selectedProduct.id);
+      const deleted = await deleteProduct(selectedProduct.id);
       if (deleted) {
         toast({
           title: "Product deleted",
@@ -149,14 +182,23 @@ const Products: React.FC = () => {
     }
   };
 
+  // Extract unique categories from products for filter
+  const categoryOptions = Array.from(new Set(products.map(product => product.category)));
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Products</h1>
-        <Button onClick={handleAddProduct} className="gap-2">
-          <PlusCircle className="h-4 w-4" />
-          Add Product
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <Button onClick={handleAddProduct} className="gap-2">
+            <PlusCircle className="h-4 w-4" />
+            Add Product
+          </Button>
+        </div>
       </div>
       
       <div className="flex flex-col md:flex-row gap-4">
@@ -171,13 +213,13 @@ const Products: React.FC = () => {
         </div>
         
         <div className="flex gap-2">
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter} disabled={categoryLoading}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {categories.map(category => (
+              {categoryOptions.map(category => (
                 <SelectItem key={category} value={category}>{category}</SelectItem>
               ))}
             </SelectContent>
@@ -224,10 +266,32 @@ const Products: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProducts.length === 0 ? (
+            {loading ? (
+              // Loading skeleton
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-12 w-12 rounded" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  </TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Skeleton className="h-9 w-16" />
+                      <Skeleton className="h-9 w-16" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : filteredProducts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
-                  No products found.
+                  {products.length === 0 ? 'No products found. Add some products to get started!' : 'No products match your filters.'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -300,7 +364,7 @@ const Products: React.FC = () => {
         product={selectedProduct || undefined}
         onSubmit={handleSaveProduct}
         isSubmitting={isSubmitting}
-        categories={categories}
+        categories={categoryOptions}
       />
       
       {/* Delete Dialog */}

@@ -1,4 +1,4 @@
 
 project_id = "uhahxzsenmhdtgmltrjs"
 [functions.create-user-profile]
-verify_jwt = true
+verify_jwt = false

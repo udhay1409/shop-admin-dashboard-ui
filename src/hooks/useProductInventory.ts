@@ -1,54 +1,136 @@
-
 import { useState, useEffect } from 'react';
-import { productInventoryService, WarehouseLocation, ProductInventoryItem } from '@/services/productInventoryService';
+import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
+import * as productService from '@/services/productService';
+import { WarehouseLocation } from '@/services/productInventoryService';
 
 export default function useProductInventory() {
   const [products, setProducts] = useState<Product[]>([]);
   const [locations, setLocations] = useState<WarehouseLocation[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const fetchedProducts = await productService.getProducts();
+      setProducts(fetchedProducts);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load products. Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setLoading(true);
+    fetchProducts();
     
-    // Get initial data
-    setProducts(productInventoryService.getProducts());
-    setLocations(productInventoryService.getLocations());
-    setLoading(false);
-    
-    // Subscribe to changes
-    const unsubscribe = productInventoryService.subscribe(() => {
-      setProducts([...productInventoryService.getProducts()]);
-      setLocations([...productInventoryService.getLocations()]);
-    });
-    
-    return unsubscribe;
-  }, []);
+    // For now, we'll keep using mock data for locations
+    // until we implement that part of the functionality
+    setLocations([
+      {
+        id: '1',
+        name: 'Main Warehouse',
+        address: '123 Warehouse St, New York, NY 10001',
+        totalItems: 4500,
+        itemsLowStock: 42,
+      },
+      {
+        id: '2',
+        name: 'East Coast Distribution',
+        address: '456 East Ave, Boston, MA 02108',
+        totalItems: 3200,
+        itemsLowStock: 28,
+      },
+      {
+        id: '3',
+        name: 'West Coast Center',
+        address: '789 Pacific Rd, Los Angeles, CA 90012',
+        totalItems: 2800,
+        itemsLowStock: 35,
+      }
+    ]);
+  }, [toast]);
 
-  const getProductById = (id: string) => productInventoryService.getProductById(id);
-  
-  const addProduct = (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
-    return productInventoryService.addProduct(product);
+  const getProductById = async (id: string) => {
+    try {
+      return await productService.getProductById(id);
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load product details.',
+        variant: 'destructive',
+      });
+      return null;
+    }
   };
   
-  const updateProduct = (id: string, updates: Partial<Product>) => {
-    return productInventoryService.updateProduct(id, updates);
+  const addProduct = async (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newProduct = await productService.createProduct(product);
+      setProducts(prev => [...prev, newProduct]);
+      return newProduct;
+    } catch (error) {
+      console.error('Error adding product:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create product.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
   
-  const deleteProduct = (id: string) => {
-    return productInventoryService.deleteProduct(id);
+  const updateProduct = async (id: string, updates: Partial<Product>) => {
+    try {
+      const updatedProduct = await productService.updateProduct(id, updates);
+      setProducts(prev => prev.map(p => p.id === id ? updatedProduct : p));
+      return updatedProduct;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update product.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+  
+  const deleteProduct = async (id: string) => {
+    try {
+      await productService.deleteProduct(id);
+      setProducts(prev => prev.filter(p => p.id !== id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete product.',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
   
   const getProductInventory = (productId: string) => {
-    return productInventoryService.getProductInventory(productId);
+    // To be implemented with Supabase later
+    return [];
   };
   
   const getAllInventory = () => {
-    return productInventoryService.getAllInventory();
+    // To be implemented with Supabase later
+    return [];
   };
   
   const updateProductStock = (productId: string, locationId: string, quantity: number) => {
-    productInventoryService.updateProductStock(productId, locationId, quantity);
+    // To be implemented with Supabase later
   };
 
   return {
@@ -62,5 +144,6 @@ export default function useProductInventory() {
     getProductInventory,
     getAllInventory,
     updateProductStock,
+    refreshProducts: fetchProducts
   };
 }
