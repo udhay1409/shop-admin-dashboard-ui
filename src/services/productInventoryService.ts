@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Product } from "@/types/product";
+import { Product, ProductStatus } from "@/types/product";
 
 // Define types for our inventory management
 export interface WarehouseLocation {
@@ -19,6 +19,7 @@ export interface ProductInventoryItem {
   lowStockThreshold: number;
   lastRestocked: string;
   product?: Product;
+  locationName?: string;
 }
 
 class ProductInventoryService {
@@ -38,7 +39,9 @@ class ProductInventoryService {
       return data.map(location => ({
         id: location.id,
         name: location.name,
-        address: location.address?.address || '',
+        address: location.address && typeof location.address === 'object' ? 
+          (location.address.address as string || '') : 
+          (typeof location.address === 'string' ? location.address : ''),
         is_active: location.is_active
       }));
     } catch (error) {
@@ -118,7 +121,7 @@ class ProductInventoryService {
       }
       
       // Process and format the inventory data
-      return data.map(item => {
+      const inventory: ProductInventoryItem[] = data.map(item => {
         const lowStockThreshold = Math.max(5, Math.floor(item.quantity * 0.2)); // Default 20% of quantity or 5
         
         return {
@@ -134,7 +137,7 @@ class ProductInventoryService {
             name: item.products.name,
             price: Number(item.products.price),
             stock: item.products.stock,
-            status: item.products.status,
+            status: item.products.status as ProductStatus,
             category: item.products.categories?.name || 'Uncategorized',
             image: item.products.image_url,
             sku: item.products.sku,
@@ -144,6 +147,8 @@ class ProductInventoryService {
           locationName: item.warehouse_locations?.name
         };
       });
+      
+      return inventory;
     } catch (error) {
       console.error("Failed to get all inventory:", error);
       return [];
