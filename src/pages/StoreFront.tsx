@@ -1,8 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import {
   Search,
   ShoppingCart,
@@ -10,8 +19,11 @@ import {
   User,
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  ArrowRight,
+  Star
 } from 'lucide-react';
+import useProductInventory from '@/hooks/useProductInventory';
 
 const categories = [
   "New Arrivals",
@@ -24,54 +36,31 @@ const categories = [
   "Sale"
 ];
 
-const featuredProducts = [
-  {
-    id: '1',
-    name: 'Floral Summer Dress',
-    price: 59.99,
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300&h=450&fit=crop',
-    category: 'Dresses',
-    isNew: true,
-    sale: false
-  },
-  {
-    id: '2',
-    name: 'Essential White Blouse',
-    price: 34.99,
-    image: 'https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=300&h=450&fit=crop',
-    category: 'Tops',
-    isNew: true,
-    sale: false
-  },
-  {
-    id: '3',
-    name: 'High-Waisted Jeans',
-    price: 49.99,
-    originalPrice: 79.99,
-    image: 'https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=300&h=450&fit=crop',
-    category: 'Bottoms',
-    isNew: false,
-    sale: true
-  },
-  {
-    id: '4',
-    name: 'Oversized Cardigan',
-    price: 45.99,
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300&h=450&fit=crop',
-    category: 'Outerwear',
-    isNew: false,
-    sale: false
-  }
-];
-
 const StoreFront: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { products } = useProductInventory();
+  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  
+  useEffect(() => {
+    // Get featured products from the product inventory
+    const available = products.filter(p => p.status === 'Active');
+    // Use up to 4 products for the featured section
+    setFeaturedProducts(available.slice(0, 4).map(product => ({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300&h=450&fit=crop',
+      category: product.category,
+      isNew: new Date(product.createdAt).getTime() > Date.now() - (30 * 24 * 60 * 60 * 1000), // New if less than 30 days old
+      sale: false
+    })));
+  }, [products]);
   
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 bg-white border-b z-30">
+      <header className="sticky top-0 bg-white border-b z-30 shadow-sm">
         <div className="container mx-auto px-4">
           <div className="h-16 flex items-center justify-between">
             {/* Logo */}
@@ -84,7 +73,7 @@ const StoreFront: React.FC = () => {
               >
                 <Menu className="h-6 w-6" />
               </Button>
-              <h1 className="text-2xl font-bold text-pink-600">Fashiona</h1>
+              <h1 className="text-2xl font-script font-bold text-pink-600">Fashiona</h1>
             </div>
             
             {/* Desktop Navigation */}
@@ -153,7 +142,7 @@ const StoreFront: React.FC = () => {
       {/* Mobile Menu */}
       <div className={`fixed inset-0 bg-white z-40 transition-transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex justify-between items-center h-16 px-4 border-b">
-          <h1 className="text-xl font-bold text-pink-600">Fashiona</h1>
+          <h1 className="text-xl font-script font-bold text-pink-600">Fashiona</h1>
           <Button 
             variant="ghost" 
             size="icon"
@@ -191,41 +180,81 @@ const StoreFront: React.FC = () => {
         </div>
       </div>
       
-      {/* Hero Section */}
-      <section className="bg-pink-50 py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-xl">
-            <Badge variant="outline" className="mb-4">New Collection</Badge>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Spring Summer 2025 Collection</h1>
-            <p className="text-lg text-gray-600 mb-8">
-              Discover the latest trends in women's fashion and express your unique style with our new arrivals.
-            </p>
-            <div className="flex space-x-4">
-              <Button size="lg" className="bg-pink-600 hover:bg-pink-700">
-                Shop Now
-              </Button>
-              <Button size="lg" variant="outline">
-                Explore Collection
-              </Button>
-            </div>
+      {/* Hero Carousel */}
+      <section className="relative">
+        <Carousel className="w-full">
+          <CarouselContent>
+            <CarouselItem>
+              <div className="bg-gradient-to-r from-pink-50 to-purple-50 py-16 px-4 md:px-12">
+                <div className="container mx-auto">
+                  <div className="max-w-xl">
+                    <Badge variant="outline" className="mb-4">New Collection</Badge>
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4">Spring Summer 2025 Collection</h1>
+                    <p className="text-lg text-gray-600 mb-8">
+                      Discover the latest trends in women's fashion and express your unique style with our new arrivals.
+                    </p>
+                    <div className="flex space-x-4">
+                      <Button size="lg" className="bg-pink-600 hover:bg-pink-700">
+                        Shop Now
+                      </Button>
+                      <Button size="lg" variant="outline">
+                        Explore Collection
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CarouselItem>
+            <CarouselItem>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 py-16 px-4 md:px-12">
+                <div className="container mx-auto">
+                  <div className="max-w-xl">
+                    <Badge variant="outline" className="mb-4">Limited Time</Badge>
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4">Summer Sale Up To 50% Off</h1>
+                    <p className="text-lg text-gray-600 mb-8">
+                      Refresh your wardrobe with our seasonal discounts on selected styles and accessories.
+                    </p>
+                    <div className="flex space-x-4">
+                      <Button size="lg" className="bg-pink-600 hover:bg-pink-700">
+                        Shop Sale
+                      </Button>
+                      <Button size="lg" variant="outline">
+                        View All
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CarouselItem>
+          </CarouselContent>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+            <CarouselPrevious className="relative left-0 translate-y-0 h-8 w-8 rounded-full border border-pink-200" />
+            <CarouselNext className="relative right-0 translate-y-0 h-8 w-8 rounded-full border border-pink-200" />
           </div>
-        </div>
+        </Carousel>
       </section>
       
       {/* Featured Products */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-8">Featured Products</h2>
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold">Featured Products</h2>
+            <Button variant="link" className="flex items-center text-pink-600">
+              View All <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {featuredProducts.map(product => (
-              <div key={product.id} className="group">
-                <div className="relative aspect-[3/4] mb-3 overflow-hidden">
-                  <img 
-                    src={product.image} 
-                    alt={product.name}
-                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                  />
+              <Card key={product.id} className="group overflow-hidden border-none shadow-sm hover:shadow-md transition-all duration-200">
+                <div className="relative">
+                  <AspectRatio ratio={3/4}>
+                    <img 
+                      src={product.image} 
+                      alt={product.name}
+                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </AspectRatio>
                   {product.isNew && (
                     <Badge className="absolute top-2 left-2 bg-black text-white">New</Badge>
                   )}
@@ -238,21 +267,27 @@ const StoreFront: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-                <h3 className="font-medium">{product.name}</h3>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-pink-600">${product.price.toFixed(2)}</span>
-                  {product.originalPrice && (
-                    <span className="text-gray-400 line-through text-sm">
-                      ${product.originalPrice.toFixed(2)}
-                    </span>
-                  )}
-                </div>
-              </div>
+                <CardContent className="p-4">
+                  <div className="flex items-center text-yellow-400 mb-2">
+                    <Star className="h-3.5 w-3.5 fill-current" />
+                    <Star className="h-3.5 w-3.5 fill-current" />
+                    <Star className="h-3.5 w-3.5 fill-current" />
+                    <Star className="h-3.5 w-3.5 fill-current" />
+                    <Star className="h-3.5 w-3.5" />
+                    <span className="text-xs text-gray-500 ml-1">(24)</span>
+                  </div>
+                  <h3 className="font-medium">{product.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-pink-600">${product.price.toFixed(2)}</span>
+                    {product.originalPrice && (
+                      <span className="text-gray-400 line-through text-sm">
+                        ${product.originalPrice.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
-          </div>
-          
-          <div className="mt-12 text-center">
-            <Button>View All Products</Button>
           </div>
         </div>
       </section>
@@ -267,10 +302,10 @@ const StoreFront: React.FC = () => {
               <a 
                 key={category}
                 href="#"
-                className="relative aspect-square overflow-hidden group"
+                className="relative aspect-square overflow-hidden group rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
               >
                 <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
-                  <span className="text-white text-lg font-medium px-4 py-2 border border-white">
+                  <span className="text-white text-lg font-medium px-4 py-2 border border-white rounded-md backdrop-blur-sm bg-black/10">
                     {category}
                   </span>
                 </div>
@@ -285,8 +320,45 @@ const StoreFront: React.FC = () => {
         </div>
       </section>
       
+      {/* Features */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center p-6 hover-lift">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-100 text-pink-600 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold mb-2">Free Shipping</h3>
+              <p className="text-gray-600">Free shipping on all orders over $50</p>
+            </div>
+            
+            <div className="text-center p-6 hover-lift">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-100 text-pink-600 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold mb-2">Easy Returns</h3>
+              <p className="text-gray-600">30-day return policy for all items</p>
+            </div>
+            
+            <div className="text-center p-6 hover-lift">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-100 text-pink-600 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold mb-2">Secure Payments</h3>
+              <p className="text-gray-600">Your data is protected at all times</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
       {/* Newsletter */}
-      <section className="py-16 bg-pink-600 text-white">
+      <section className="py-16 bg-gradient-to-r from-pink-500 to-pink-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold mb-2">Subscribe to Our Newsletter</h2>
           <p className="mb-6 max-w-md mx-auto">
@@ -310,7 +382,7 @@ const StoreFront: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-lg font-bold mb-4">Fashiona</h3>
+              <h3 className="text-lg font-bold mb-4 font-script">Fashiona</h3>
               <p className="text-gray-400">
                 Your destination for trendy women's fashion and accessories.
               </p>

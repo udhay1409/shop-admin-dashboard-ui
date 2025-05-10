@@ -1,4 +1,6 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -171,3 +173,40 @@
   @apply bg-pink-50;
 }
 
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+/* Product card hover effects */
+.product-card-overlay {
+  @apply absolute inset-0 bg-black bg-opacity-0 flex items-center justify-center opacity-0 transition-all duration-300;
+}
+
+.product-card:hover .product-card-overlay {
+  @apply bg-opacity-30 opacity-100;
+}
+
+/* Category highlight */
+.category-item {
+  @apply relative overflow-hidden rounded-lg;
+}
+
+.category-item::after {
+  content: '';
+  @apply absolute bottom-0 left-0 w-0 h-1 bg-pink-600 transition-all duration-300;
+}
+
+.category-item:hover::after {
+  @apply w-full;
+}
+
+/* Newsletter input focus */
+.newsletter-input:focus {
+  @apply ring-2 ring-white ring-opacity-50;
+}
