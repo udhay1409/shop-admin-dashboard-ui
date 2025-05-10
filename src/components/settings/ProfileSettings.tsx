@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 
+// Update the Profile schema to match the actual database schema
 const profileFormSchema = z.object({
   username: z.string().min(2, {
     message: "Username must be at least 2 characters.",
@@ -59,8 +60,8 @@ const ProfileSettings: React.FC = () => {
           form.reset({
             username: profile.first_name || "",
             email: session.user.email || "",
-            bio: profile.bio || "",
-            avatar: profile.avatar_url || "",
+            bio: "", // Default value as bio doesn't exist yet
+            avatar: "", // Default value as avatar_url doesn't exist yet
           });
         } else {
           // Set email from auth if profile not found
@@ -89,7 +90,6 @@ const ProfileSettings: React.FC = () => {
         .upsert({
           id: user.id,
           first_name: data.username,
-          bio: data.bio,
           updated_at: new Date().toISOString(),
         });
       

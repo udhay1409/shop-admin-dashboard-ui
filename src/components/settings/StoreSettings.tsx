@@ -38,8 +38,8 @@ type StoreFormValues = z.infer<typeof storeFormSchema>;
 const StoreSettings: React.FC = () => {
   const { settings, loading, saveSettings } = useStoreSettings();
   
-  // Default values for the form
-  const defaultValues: Partial<StoreFormValues> = {
+  // Default values for the form - ensure all required fields are present
+  const defaultValues: StoreFormValues = {
     storeName: "Fashiona",
     storeUrl: "https://example.com",
     description: "A premium fashion e-commerce store",
@@ -61,7 +61,7 @@ const StoreSettings: React.FC = () => {
   }, [settings, loading, form]);
 
   function onSubmit(data: StoreFormValues) {
-    saveSettings(data);
+    saveSettings(data as StoreSettingsType);
   }
 
   return (

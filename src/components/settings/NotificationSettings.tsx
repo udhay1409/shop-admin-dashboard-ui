@@ -27,7 +27,7 @@ type NotificationFormValues = z.infer<typeof notificationFormSchema>;
 const NotificationSettings: React.FC = () => {
   const { settings, loading, saveSettings } = useNotificationSettings();
   
-  // Default values for the form
+  // Default values for the form - ensure all required fields are present
   const defaultValues: NotificationFormValues = {
     emailOrderConfirmation: true,
     emailShippingUpdates: true,
@@ -51,7 +51,7 @@ const NotificationSettings: React.FC = () => {
   }, [settings, loading, form]);
 
   function onSubmit(data: NotificationFormValues) {
-    saveSettings(data);
+    saveSettings(data as NotificationSettingsType);
   }
 
   return (

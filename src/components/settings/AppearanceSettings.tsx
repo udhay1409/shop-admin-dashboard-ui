@@ -36,7 +36,7 @@ type AppearanceFormValues = z.infer<typeof appearanceSchema>;
 const AppearanceSettings: React.FC = () => {
   const { settings, loading, saveSettings } = useAppearanceSettings();
   
-  // Default values for the form
+  // Default values for the form - ensure all required fields are present
   const defaultValues: AppearanceFormValues = {
     theme: "light",
     colorScheme: "pink",
@@ -59,7 +59,7 @@ const AppearanceSettings: React.FC = () => {
   }, [settings, loading, form]);
 
   function onSubmit(data: AppearanceFormValues) {
-    saveSettings(data);
+    saveSettings(data as AppearanceSettingsType);
   }
 
   return (

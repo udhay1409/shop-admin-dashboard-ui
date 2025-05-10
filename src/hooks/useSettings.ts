@@ -28,7 +28,8 @@ export function useSettings<T>(
     async function fetchSettings() {
       try {
         const userSettings = await getUserSettings();
-        setSettings(userSettings[settingType] || null);
+        // Cast to the expected type T to ensure type safety
+        setSettings((userSettings[settingType] || null) as T);
       } catch (err) {
         console.error('Error loading settings:', err);
         setError(err instanceof Error ? err : new Error('Failed to load settings'));

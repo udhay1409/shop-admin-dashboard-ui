@@ -94,7 +94,7 @@ const EmailTemplatesSettings: React.FC = () => {
   }, [settings, loading, form]);
   
   function onSubmit(data: TemplateFormValues) {
-    saveSettings(data);
+    saveSettings(data as EmailTemplatesType);
   }
   
   return (

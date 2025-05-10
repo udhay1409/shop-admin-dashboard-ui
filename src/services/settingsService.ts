@@ -117,9 +117,10 @@ export async function getUserSettings() {
         payment_settings: getDefaultPaymentSettings(),
       };
       
+      // Insert as a single object, not an array
       const { error: insertError } = await supabase
         .from('profiles_settings')
-        .insert([defaultSettings]);
+        .insert(defaultSettings);
         
       if (insertError) {
         console.error('Error creating default settings:', insertError);
