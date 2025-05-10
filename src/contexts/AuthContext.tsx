@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,17 +55,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       // Use setTimeout to prevent potential Supabase callback recursion
       setTimeout(async () => {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .single();
+        try {
+          const { data, error } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', userId)
+            .single();
 
-        if (error) {
-          console.error('Error fetching user role:', error);
-          setUserRole('customer'); // Default role
-        } else {
-          setUserRole(data.role || 'customer');
+          if (error) {
+            console.error('Error fetching user role:', error);
+            setUserRole('customer'); // Default role
+          } else {
+            setUserRole(data?.role || 'customer');
+          }
+        } catch (innerError) {
+          console.error('Inner error in fetchUserRole:', innerError);
+          setUserRole('customer'); // Default role on error
         }
       }, 0);
     } catch (error) {
@@ -75,9 +81,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Initialize auth state
   useEffect(() => {
+    let isMounted = true;
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, currentSession: Session | null) => {
+        if (!isMounted) return;
+        
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
@@ -91,25 +101,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (event === 'SIGNED_OUT') {
           setUserRole(null);
         }
+
+        // Set loading to false after auth state change is processed
+        setIsLoading(false);
       }
     );
 
     // THEN check for existing session
     const initializeAuth = async () => {
+      if (!isMounted) return;
+      
       try {
         setIsLoading(true);
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+        const { data } = await supabase.auth.getSession();
         
-        // Fetch user role if there's an existing session
-        if (currentSession?.user) {
-          await fetchUserRole(currentSession.user.id);
+        if (isMounted) {
+          const currentSession = data?.session;
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          
+          // Fetch user role if there's an existing session
+          if (currentSession?.user) {
+            await fetchUserRole(currentSession.user.id);
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -117,6 +138,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     // Cleanup subscription when component unmounts
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -124,6 +146,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
@@ -139,6 +162,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error: any) {
       console.error('Login error:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -184,11 +209,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Logout function
   const logout = async (): Promise<void> => {
     try {
+      setIsLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) {
         throw error;
       }
       setUserRole(null);
+      setUser(null);
+      setSession(null);
     } catch (error: any) {
       console.error('Logout error:', error);
       toast({
@@ -196,6 +224,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         description: error.message || "An error occurred during logout.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -274,6 +304,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Refresh session
   const refreshSession = async (): Promise<void> => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.refreshSession();
       if (error) {
         throw error;
@@ -287,6 +318,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     } catch (error) {
       console.error('Session refresh error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 

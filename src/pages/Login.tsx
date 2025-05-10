@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, KeyRound, ArrowRight } from 'lucide-react';
+import { Mail, KeyRound, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -41,6 +41,7 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { login, isAuthenticated, userRole, isLoading } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -61,9 +62,9 @@ const Login = () => {
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
       if (userRole === 'admin') {
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       } else {
-        navigate('/store');
+        navigate('/store', { replace: true });
       }
     }
   }, [isAuthenticated, isLoading, navigate, userRole]);
@@ -82,6 +83,13 @@ const Login = () => {
           title: 'Login successful',
           description: 'Welcome back!',
         });
+
+        // Redirect based on role using replace to prevent back button issues
+        if (userRole === 'admin') {
+          navigate('/dashboard', { replace: true });
+        } else {
+          navigate('/store', { replace: true }); 
+        }
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -179,11 +187,27 @@ const Login = () => {
                       <div className="relative">
                         <KeyRound className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input
-                          type="password"
+                          type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
-                          className="pl-10"
+                          className="pl-10 pr-10"
                           {...field}
                         />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1 h-8 w-8 p-0"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                          <span className="sr-only">
+                            {showPassword ? "Hide password" : "Show password"}
+                          </span>
+                        </Button>
                       </div>
                     </FormControl>
                     <FormMessage />

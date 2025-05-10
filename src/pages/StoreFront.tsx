@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import AdminBar from '@/components/AdminBar';
-import { Link, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
+import { Link, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import HomePage from './HomePage';
 import CategoryPage from './store/CategoryPage';
 import SubcategoryPage from './store/SubcategoryPage';
@@ -37,7 +38,9 @@ const StoreProtectedRoute = ({ children }) => {
   const location = useLocation();
   
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return <div className="flex h-screen items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#EC008C]"></div>
+    </div>;
   }
   
   if (!user) {
@@ -59,15 +62,15 @@ const StoreFront: React.FC = () => {
     if (!user) return "";
     // Use metadata if available, fall back to email
     const metadata = user.user_metadata as Record<string, any>;
-    return metadata?.name || user.email?.split('@')[0] || "User";
+    return metadata?.full_name || metadata?.first_name || user.email?.split('@')[0] || "User";
   };
   
-  // Redirect admin users to the admin dashboard if they access /store directly
+  // Only redirect admin users when they access the root /store path and not subpaths
   useEffect(() => {
     if (!isLoading && user && userRole === 'admin' && location.pathname === '/store') {
       window.location.href = '/dashboard';
     }
-  }, [user, userRole, location, isLoading]);
+  }, [user, userRole, location.pathname, isLoading]);
   
   // Simple admin check
   const isAdmin = userRole === 'admin';
@@ -171,7 +174,11 @@ const StoreFront: React.FC = () => {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    onClick={logout} 
+                    onClick={() => {
+                      logout();
+                      // After logout, redirect to login
+                      window.location.href = '/login';
+                    }} 
                     className="text-red-500"
                     title="Logout"
                   >
@@ -303,6 +310,8 @@ const StoreFront: React.FC = () => {
                 onClick={() => {
                   logout();
                   setMobileMenuOpen(false);
+                  // After logout, redirect to login
+                  window.location.href = '/login';
                 }}
               >
                 <LogOut className="h-4 w-4 mr-2" />

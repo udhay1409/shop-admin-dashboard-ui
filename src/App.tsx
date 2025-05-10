@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,7 +30,14 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useEffect } from "react";
 import { supabase } from "./integrations/supabase/client";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30000, // 30 seconds
+    },
+  },
+});
 
 // Root route component for conditional redirection
 const RootRedirect = () => {
@@ -37,7 +45,9 @@ const RootRedirect = () => {
   const location = useLocation();
 
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return <div className="flex h-screen items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#EC008C]"></div>
+    </div>;
   }
 
   if (isAuthenticated) {
@@ -55,14 +65,17 @@ const RootRedirect = () => {
 
 // Protected route component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
-  const { user, isAuthenticated, isLoading, userRole } = useAuth();
+  const { isAuthenticated, isLoading, userRole } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return <div className="flex h-screen items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#EC008C]"></div>
+    </div>;
   }
 
   if (!isAuthenticated) {
+    // Save the current location the user was trying to access
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -136,6 +149,9 @@ function App() {
             email: 'kansha@mntfuture.com',
             password: '123456'
           })
+        }).catch(err => {
+          console.log('Network error when creating admin 1:', err);
+          return { json: () => ({ success: false, error: err.message }) };
         });
         
         const result1 = await response1.json();
@@ -149,6 +165,9 @@ function App() {
             email: 'mkansha2312@gmail.com',
             password: '123456'
           })
+        }).catch(err => {
+          console.log('Network error when creating admin 2:', err);
+          return { json: () => ({ success: false, error: err.message }) };
         });
         
         const result2 = await response2.json();
@@ -159,7 +178,8 @@ function App() {
       }
     };
     
-    createAdminUsers();
+    // Run admin user setup with a small delay
+    setTimeout(createAdminUsers, 1000);
   }, []);
 
   return (

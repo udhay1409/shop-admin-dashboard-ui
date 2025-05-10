@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation, Link, Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,10 +10,9 @@ import {
 } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import BreadcrumbNav from '@/components/store/BreadcrumbNav';
-import { User, Package, MapPin, CreditCard, Heart, Settings, LogOut, Mail } from 'lucide-react';
+import { User, Package, MapPin, CreditCard, Heart, Mail, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 
@@ -21,23 +20,56 @@ const ProfileTab = () => {
   const { user, updateProfile } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    name: user?.user_metadata?.name || "",
-    email: user?.email || "",
-    phone: user?.user_metadata?.phone || "",
+    name: "",
+    email: "",
+    phone: "",
   });
+
+  // Load user data when component mounts
+  useEffect(() => {
+    if (user) {
+      const metadata = user.user_metadata as Record<string, any> || {};
+      setFormData({
+        name: metadata.full_name || `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim(),
+        email: user.email || "",
+        phone: metadata.phone || "",
+      });
+    }
+  }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile(formData);
-    toast({
-      title: "Profile updated",
-      description: "Your profile information has been updated."
-    });
+    
+    try {
+      // Parse name into first and last name
+      const nameParts = formData.name.split(' ');
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(' ') || "";
+      
+      await updateProfile({
+        first_name: firstName,
+        last_name: lastName,
+        email: formData.email,
+        phone: formData.phone,
+      });
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile information has been updated."
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Update failed",
+        description: "There was a problem updating your profile.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -363,13 +395,22 @@ const AccountDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentTab = location.pathname.split('/').pop() || 'profile';
+  const [currentTab, setCurrentTab] = useState('profile');
+  
+  // Update currentTab based on URL on component mount and location changes
+  useEffect(() => {
+    const path = location.pathname.split('/').pop() || 'profile';
+    setCurrentTab(path);
+  }, [location.pathname]);
   
   // Helper to get user display name
   const getUserDisplayName = () => {
     if (!user) return "User";
-    const metadata = user.user_metadata as Record<string, any>;
-    return metadata?.name || user.email?.split('@')[0] || "User";
+    const metadata = user.user_metadata as Record<string, any> || {};
+    return metadata.full_name || 
+           `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim() || 
+           user.email?.split('@')[0] || 
+           "User";
   };
   
   const getUserEmail = () => {
@@ -377,14 +418,33 @@ const AccountDashboard = () => {
   };
   
   // If not authenticated, redirect to login
-  if (!user) {
-    navigate('/store/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!user) {
+      navigate('/login', { state: { from: location } });
+    }
+  }, [user, navigate, location]);
 
   const handleTabChange = (value: string) => {
     navigate(`/store/account/${value === 'profile' ? '' : value}`);
+    setCurrentTab(value);
   };
+
+  // Handle safe logout
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  // Show loading state while checking authentication
+  if (!user) {
+    return <div className="flex h-screen items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#EC008C]"></div>
+    </div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -461,7 +521,7 @@ const AccountDashboard = () => {
               <Button 
                 variant="ghost" 
                 className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-                onClick={logout}
+                onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Log out
