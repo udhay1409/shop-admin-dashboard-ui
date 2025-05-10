@@ -62,7 +62,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       status: category?.status || 'Draft',
       imageUrl: category?.imageUrl || '',
       color: category?.color || '#6E59A5',
-      parentId: category?.parentId || undefined,
+      parentId: category?.parentId || (parentCategories.length > 0 ? parentCategories[0].id : undefined),
     },
   });
 
@@ -144,7 +144,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {isSubcategory && (
+          {isSubcategory && parentCategories.length > 0 && (
             <FormField
               control={form.control}
               name="parentId"
@@ -153,7 +153,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
                   <FormLabel>Parent Category</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
-                    value={field.value || undefined}
+                    value={field.value || parentCategories[0].id}
                   >
                     <FormControl>
                       <SelectTrigger>

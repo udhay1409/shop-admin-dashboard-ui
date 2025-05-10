@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Search, Filter, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,8 +29,8 @@ const Products: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct } = useProductInventory();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   
   // Dialog states
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
@@ -46,10 +47,10 @@ const Products: React.FC = () => {
     const matchesSearch = searchTerm === '' || 
       product.name.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = categoryFilter === '' || 
+    const matchesCategory = categoryFilter === 'all' || 
       product.category === categoryFilter;
     
-    const matchesStatus = statusFilter === '' || 
+    const matchesStatus = statusFilter === 'all' || 
       product.status === statusFilter;
     
     return matchesSearch && matchesCategory && matchesStatus;
@@ -175,7 +176,7 @@ const Products: React.FC = () => {
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {categories.map(category => (
                 <SelectItem key={category} value={category}>{category}</SelectItem>
               ))}
@@ -187,7 +188,7 @@ const Products: React.FC = () => {
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="Active">Active</SelectItem>
               <SelectItem value="Draft">Draft</SelectItem>
               <SelectItem value="Inactive">Inactive</SelectItem>

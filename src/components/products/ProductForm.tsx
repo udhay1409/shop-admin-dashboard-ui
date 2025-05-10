@@ -63,7 +63,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       description: product?.description || '',
       sku: product?.sku || '',
       status: product?.status || 'Draft',
-      category: product?.category || '',
+      category: product?.category || (categories.length > 0 ? categories[0] : 'Uncategorized'),
       image: product?.image || '',
     },
   });
@@ -177,7 +177,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="no-categories">No categories available</SelectItem>
+                        <SelectItem value="uncategorized">Uncategorized</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
