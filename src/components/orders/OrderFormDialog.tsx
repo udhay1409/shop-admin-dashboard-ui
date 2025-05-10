@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Order } from '@/types/order';
+import { useToast } from '@/components/ui/use-toast';
+import { createOrderConfirmationEmail, sendEmail } from '@/services/emailService';
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface OrderFormDialogProps {
   open: boolean;
@@ -15,18 +17,24 @@ interface OrderFormDialogProps {
 }
 
 const OrderFormDialog: React.FC<OrderFormDialogProps> = ({ open, onOpenChange, onSubmit }) => {
+  const { toast } = useToast();
   const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [items, setItems] = useState('');
   const [total, setTotal] = useState('');
   const [payment, setPayment] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
+  const [sendConfirmationEmail, setSendConfirmationEmail] = useState(true);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Format total to add ₹ if not already present
     const formattedTotal = total.includes('₹') ? total : `₹${total}`;
+    
+    // Generate a random order ID
+    const orderId = `ORD-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
     
     // Create new order object
     const newOrder: Partial<Order> = {
@@ -42,13 +50,37 @@ const OrderFormDialog: React.FC<OrderFormDialogProps> = ({ open, onOpenChange, o
     
     onSubmit(newOrder);
     
+    // Send confirmation email if enabled and email is provided
+    if (sendConfirmationEmail && customerEmail) {
+      const emailTemplate = createOrderConfirmationEmail(
+        customerName, 
+        orderId, 
+        items, 
+        formattedTotal
+      );
+      
+      // Set recipient email
+      emailTemplate.to = customerEmail;
+      
+      const emailSent = await sendEmail(emailTemplate);
+      
+      if (emailSent) {
+        toast({
+          title: "Order confirmation email sent",
+          description: `A confirmation email has been sent to ${customerEmail}`,
+        });
+      }
+    }
+    
     // Reset form fields
     setCustomerName('');
+    setCustomerEmail('');
     setItems('');
     setTotal('');
     setPayment('');
     setAddress('');
     setPhone('');
+    setSendConfirmationEmail(true);
   };
   
   return (
@@ -70,6 +102,17 @@ const OrderFormDialog: React.FC<OrderFormDialogProps> = ({ open, onOpenChange, o
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="Full name"
               required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="customerEmail">Customer Email</Label>
+            <Input 
+              id="customerEmail"
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="customer@example.com"
             />
           </div>
           
@@ -114,6 +157,19 @@ const OrderFormDialog: React.FC<OrderFormDialogProps> = ({ open, onOpenChange, o
                 <SelectItem value="COD">Cash on Delivery</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="sendConfirmationEmail" 
+                checked={sendConfirmationEmail}
+                onCheckedChange={(checked) => setSendConfirmationEmail(checked as boolean)}
+              />
+              <Label htmlFor="sendConfirmationEmail">
+                Send order confirmation email
+              </Label>
+            </div>
           </div>
           
           <div className="space-y-2">

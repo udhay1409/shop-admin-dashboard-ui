@@ -13,6 +13,8 @@ export interface Customer {
   totalSpent: number;
   address?: string;
   notes?: string;
+  emailSubscription?: boolean; // Whether customer has subscribed to marketing emails
+  lastEmailSent?: string; // Date of last email sent
 }
 
 export interface CustomerFormValues {
@@ -20,4 +22,10 @@ export interface CustomerFormValues {
   email: string;
   password: string;
   confirmPassword: string;
+}
+
+export interface EmailPreferences {
+  marketing: boolean;
+  orderUpdates: boolean;
+  productUpdates: boolean;
 }

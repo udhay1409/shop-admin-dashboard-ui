@@ -13,6 +13,7 @@ import SecuritySettings from "@/components/settings/SecuritySettings";
 import LocalizationSettings from "@/components/settings/LocalizationSettings";
 import AppearanceSettings from "@/components/settings/AppearanceSettings";
 import SMTPSettings from "@/components/settings/SMTPSettings";
+import EmailTemplatesSettings from "@/components/settings/EmailTemplatesSettings";
 
 const SettingsPage: React.FC = () => {
   const { toast } = useToast();
@@ -28,7 +29,7 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-2 md:grid-cols-8 gap-2">
+        <TabsList className="grid grid-cols-2 md:grid-cols-9 gap-2">
           <TabsTrigger value="profile" className="flex flex-col sm:flex-row gap-2 items-center">
             <Settings size={18} />
             <span className="hidden md:block">Profile</span>
@@ -44,6 +45,10 @@ const SettingsPage: React.FC = () => {
           <TabsTrigger value="smtp" className="flex flex-col sm:flex-row gap-2 items-center">
             <Mail size={18} />
             <span className="hidden md:block">Email</span>
+          </TabsTrigger>
+          <TabsTrigger value="email-templates" className="flex flex-col sm:flex-row gap-2 items-center">
+            <Mail size={18} />
+            <span className="hidden md:block">Templates</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex flex-col sm:flex-row gap-2 items-center">
             <Bell size={18} />
@@ -77,6 +82,10 @@ const SettingsPage: React.FC = () => {
         
         <TabsContent value="smtp">
           <SMTPSettings />
+        </TabsContent>
+        
+        <TabsContent value="email-templates">
+          <EmailTemplatesSettings />
         </TabsContent>
         
         <TabsContent value="notifications">

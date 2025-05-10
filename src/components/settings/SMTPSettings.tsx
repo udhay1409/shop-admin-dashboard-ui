@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { sendEmail, getEmailConfig, saveEmailConfig } from "@/services/emailService";
 
 const smtpFormSchema = z.object({
   host: z.string().min(1, {
@@ -41,16 +42,19 @@ type SMTPFormValues = z.infer<typeof smtpFormSchema>;
 const SMTPSettings: React.FC = () => {
   const { toast } = useToast();
   
+  // Load stored SMTP config or use defaults
+  const storedConfig = getEmailConfig();
+  
   // Default values for the form
   const defaultValues: Partial<SMTPFormValues> = {
-    host: "smtp.example.com",
-    port: 587,
-    username: "",
-    password: "",
-    encryption: "tls",
-    fromEmail: "noreply@example.com",
-    fromName: "My Store",
-    enableSmtp: false,
+    host: storedConfig.host,
+    port: storedConfig.port,
+    username: storedConfig.username,
+    password: storedConfig.password,
+    encryption: storedConfig.encryption,
+    fromEmail: storedConfig.fromEmail,
+    fromName: storedConfig.fromName,
+    enableSmtp: storedConfig.enableSmtp,
     useSendTest: false,
   };
 
@@ -59,9 +63,10 @@ const SMTPSettings: React.FC = () => {
     defaultValues,
   });
 
-  function onSubmit(data: SMTPFormValues) {
-    // Save SMTP settings
-    console.log("Submitting SMTP settings:", data);
+  async function onSubmit(data: SMTPFormValues) {
+    // Save SMTP settings to localStorage
+    saveEmailConfig(data);
+    console.log("SMTP settings saved:", data);
 
     // Show a success message
     toast({
@@ -69,14 +74,26 @@ const SMTPSettings: React.FC = () => {
       description: "Your email settings have been updated successfully.",
     });
     
-    // If sendTest is checked, simulate sending a test email
+    // If sendTest is checked, send a test email
     if (data.useSendTest) {
-      setTimeout(() => {
+      const testEmailSent = await sendEmail({
+        to: data.fromEmail,
+        subject: "Test Email from Your Store",
+        body: `<h1>Test Email</h1><p>This is a test email from your store's SMTP configuration.</p>`
+      }, data);
+      
+      if (testEmailSent) {
         toast({
           title: "Test email sent",
-          description: "A test email has been sent to " + data.fromEmail,
+          description: `A test email has been sent to ${data.fromEmail}`,
         });
-      }, 1500);
+      } else {
+        toast({
+          title: "Failed to send test email",
+          description: "Please check your SMTP configuration and try again.",
+          variant: "destructive",
+        });
+      }
     }
   }
 
