@@ -11,19 +11,23 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
-import { CreditCard, Wallet, DollarSign } from "lucide-react";
+import { CreditCard, Wallet, DollarSign, IndianRupee } from "lucide-react";
 
 const paymentFormSchema = z.object({
   currency: z.string({
     required_error: "Please select a currency.",
   }),
-  stripeEnabled: z.boolean().default(true),
+  stripeEnabled: z.boolean().default(false),
   stripeKey: z.string().min(10, {
     message: "API key must be at least 10 characters.",
   }).optional(),
   paypalEnabled: z.boolean().default(false),
   paypalClientId: z.string().min(10, {
     message: "Client ID must be at least 10 characters.",
+  }).optional(),
+  razorpayEnabled: z.boolean().default(true),
+  razorpayKeyId: z.string().min(10, {
+    message: "Key ID must be at least 10 characters.",
   }).optional(),
   codEnabled: z.boolean().default(true)
 });
@@ -35,11 +39,13 @@ const PaymentSettings: React.FC = () => {
   
   // Default values for the form
   const defaultValues: Partial<PaymentFormValues> = {
-    currency: "usd",
-    stripeEnabled: true,
-    stripeKey: "sk_test_example",
+    currency: "inr", // Default to INR
+    stripeEnabled: false,
+    stripeKey: "",
     paypalEnabled: false,
     paypalClientId: "",
+    razorpayEnabled: true, // Enable Razorpay by default
+    razorpayKeyId: "rzp_test_example",
     codEnabled: true
   };
 
@@ -50,6 +56,7 @@ const PaymentSettings: React.FC = () => {
 
   const watchStripeEnabled = form.watch("stripeEnabled");
   const watchPaypalEnabled = form.watch("paypalEnabled");
+  const watchRazorpayEnabled = form.watch("razorpayEnabled");
 
   function onSubmit(data: PaymentFormValues) {
     toast({
@@ -82,6 +89,7 @@ const PaymentSettings: React.FC = () => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value="inr">INR - Indian Rupee</SelectItem>
                       <SelectItem value="usd">USD - US Dollar</SelectItem>
                       <SelectItem value="eur">EUR - Euro</SelectItem>
                       <SelectItem value="gbp">GBP - British Pound</SelectItem>
@@ -97,6 +105,54 @@ const PaymentSettings: React.FC = () => {
                 </FormItem>
               )}
             />
+            
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium flex items-center gap-2">
+                <IndianRupee className="h-5 w-5" /> Razorpay Payment
+              </h3>
+              
+              <FormField
+                control={form.control}
+                name="razorpayEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Enable Razorpay Payments</FormLabel>
+                      <FormDescription>
+                        Allow customers to pay using Razorpay (Default payment gateway).
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {watchRazorpayEnabled && (
+                <FormField
+                  control={form.control}
+                  name="razorpayKeyId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Razorpay Key ID</FormLabel>
+                      <FormControl>
+                        <Input placeholder="rzp_..." {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Your Razorpay Key ID for payment processing.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            <Separator />
             
             <div className="space-y-4">
               <h3 className="text-lg font-medium flex items-center gap-2">
