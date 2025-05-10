@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import {
 } from "@/components/ui/carousel";
 import { Heart, ShoppingCart } from 'lucide-react';
 import useProductInventory from '@/hooks/useProductInventory';
-import { Product } from '@/types/product';
+import { Product, ProductColor, ProductSize } from '@/types/product';
 
 const banners = [
   {
