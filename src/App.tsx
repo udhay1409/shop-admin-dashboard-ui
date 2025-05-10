@@ -55,8 +55,8 @@ const RootRedirect = () => {
     );
   }
 
+  // If authenticated, redirect based on role
   if (isAuthenticated) {
-    // Fix: Use direct return for admin redirect instead of multi-step logic
     if (userRole === 'admin') {
       return <Navigate to="/dashboard" replace />;
     }
@@ -64,8 +64,8 @@ const RootRedirect = () => {
     return <Navigate to="/store" replace />;
   }
 
-  // If not authenticated, redirect to login - using replace flag to prevent history stacking
-  return <Navigate to="/login" replace />;
+  // If not authenticated, redirect to store - changed from login to store
+  return <Navigate to="/store" replace />;
 };
 
 // Protected route component - fixed to handle loading state better
@@ -109,7 +109,7 @@ const AppWithAuth = () => {
         {/* Root route with smart redirect */}
         <Route path="/" element={<RootRedirect />} />
         
-        {/* Store Frontend */}
+        {/* Store Frontend - NO authentication required */}
         <Route path="/store/*" element={<StoreFront />} />
 
         {/* Authentication routes */}

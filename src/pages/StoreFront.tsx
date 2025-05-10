@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,8 +29,8 @@ import NotFound from './NotFound';
 import DynamicNavigation from '@/components/store/DynamicNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Protected route component for store
-const StoreProtectedRoute = ({ children }) => {
+// Protected route component for store account section only
+const AccountProtectedRoute = ({ children }) => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
   
@@ -350,12 +349,11 @@ const StoreFront: React.FC = () => {
           
           {/* Account routes - protected */}
           <Route path="account/*" element={
-            <StoreProtectedRoute>
+            <AccountProtectedRoute>
               <AccountDashboard />
-            </StoreProtectedRoute>
+            </AccountProtectedRoute>
           } />
           
-          {/* No need for Login/Register routes here as they're now at the top level */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
