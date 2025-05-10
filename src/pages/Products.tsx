@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Search, Filter, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -64,7 +63,8 @@ const Products: React.FC = () => {
   // Filter products
   const filteredProducts = products.filter(product => {
     const matchesSearch = searchTerm === '' || 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase());
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = categoryFilter === 'all' || 
       product.category === categoryFilter;
@@ -114,16 +114,10 @@ const Products: React.FC = () => {
     try {
       if (selectedProduct) {
         // Update existing product
-        const updatedProduct = await updateProduct(selectedProduct.id, productData);
-        if (updatedProduct) {
-          toast({
-            title: "Product updated",
-            description: `${updatedProduct.name} has been updated successfully.`
-          });
-        }
+        await updateProduct(selectedProduct.id, productData);
       } else {
         // Create new product
-        const newProduct = await addProduct({
+        await addProduct({
           name: productData.name || 'Untitled Product',
           price: productData.price || 0,
           stock: productData.stock || 0,
@@ -132,22 +126,14 @@ const Products: React.FC = () => {
           image: productData.image,
           description: productData.description,
           sku: productData.sku,
-        });
-        
-        toast({
-          title: "Product created",
-          description: `${newProduct.name} has been created successfully.`
+          subcategory: productData.subcategory,
         });
       }
       
       setIsProductDialogOpen(false);
     } catch (error) {
       console.error('Error saving product:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save product. Please try again.",
-        variant: "destructive"
-      });
+      // Toast is already handled in the hook
     } finally {
       setIsSubmitting(false);
     }
@@ -160,23 +146,11 @@ const Products: React.FC = () => {
     setIsDeleting(true);
     
     try {
-      const deleted = await deleteProduct(selectedProduct.id);
-      if (deleted) {
-        toast({
-          title: "Product deleted",
-          description: `${selectedProduct.name} has been deleted successfully.`
-        });
-        setIsDeleteDialogOpen(false);
-      } else {
-        throw new Error("Failed to delete product");
-      }
+      await deleteProduct(selectedProduct.id);
+      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error('Error deleting product:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete product. Please try again.",
-        variant: "destructive"
-      });
+      // Toast is already handled in the hook
     } finally {
       setIsDeleting(false);
     }
