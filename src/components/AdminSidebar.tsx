@@ -137,7 +137,6 @@ const AdminSidebar = () => {
             <SidebarItem to="/reviews" icon={MessageSquare} text="Reviews" badge={3} />
             <SidebarItem to="/transaction-logs" icon={Receipt} text="Transactions" />
             <SidebarItem to="/reports" icon={BarChart2} text="Reports" />
-            <SidebarItem to="/payments" icon={CreditCard} text="Payments" />
             <SidebarItem to="/settings" icon={Settings} text="Settings" />
           </ul>
         </div>
