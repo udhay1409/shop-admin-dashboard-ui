@@ -117,19 +117,20 @@ export async function getUserSettings() {
         payment_settings: getDefaultPaymentSettings(),
       };
       
-      // Insert as a single object with settings serialized as JSON
+      // Use insert with a single object (not an array)
+      // Make sure to cast complex objects to JSON
       const { error: insertError } = await supabase
         .from('profiles_settings')
         .insert({
           id: userId,
-          store_settings: defaultSettings.store_settings,
-          appearance_settings: defaultSettings.appearance_settings,
-          notification_settings: defaultSettings.notification_settings,
-          security_settings: defaultSettings.security_settings,
-          localization_settings: defaultSettings.localization_settings,
-          smtp_settings: defaultSettings.smtp_settings,
-          email_templates: defaultSettings.email_templates,
-          payment_settings: defaultSettings.payment_settings,
+          store_settings: defaultSettings.store_settings as any,
+          appearance_settings: defaultSettings.appearance_settings as any,
+          notification_settings: defaultSettings.notification_settings as any,
+          security_settings: defaultSettings.security_settings as any,
+          localization_settings: defaultSettings.localization_settings as any,
+          smtp_settings: defaultSettings.smtp_settings as any,
+          email_templates: defaultSettings.email_templates as any,
+          payment_settings: defaultSettings.payment_settings as any,
         });
         
       if (insertError) {
