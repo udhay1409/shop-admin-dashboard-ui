@@ -53,53 +53,38 @@ export const getRevenueData = async () => {
 
 export const getTopProducts = async () => {
   try {
-    // Get products with most order items
-    const { data: functionData, error: functionError } = await supabase
-      .rpc('get_top_products', { limit_num: 5 });
+    // Using a direct query instead of RPC function since the RPC function doesn't exist
+    const { data: productData, error } = await supabase
+      .from('order_items')
+      .select(`
+        product_id,
+        products:product_id (name, price, image_url),
+        quantity
+      `)
+      .order('quantity', { ascending: false })
+      .limit(5);
     
-    if (functionError || !functionData) {
-      // If RPC function doesn't exist, use a direct query
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('order_items')
-        .select(`
-          product_id,
-          products:product_id (name, price, image_url),
-          quantity
-        `)
-        .order('quantity', { ascending: false })
-        .limit(5);
-      
-      if (fallbackError) {
-        throw fallbackError;
-      }
-      
-      // Group by product and sum quantities
-      const productMap = new Map();
-      
-      fallbackData.forEach(item => {
-        const productId = item.product_id;
-        const currentQuantity = productMap.get(productId)?.unitsSold || 0;
-        
-        productMap.set(productId, {
-          id: productId,
-          name: item.products?.name || 'Unknown Product',
-          price: formatPrice(item.products?.price || 0),
-          unitsSold: currentQuantity + item.quantity,
-          image: item.products?.image_url || '/placeholder.svg'
-        });
-      });
-      
-      return Array.from(productMap.values());
+    if (error) {
+      throw error;
     }
     
-    // Format data from RPC function
-    return functionData.map((product: any) => ({
-      id: product.product_id,
-      name: product.product_name || 'Unknown Product',
-      price: formatPrice(product.price || 0),
-      unitsSold: product.total_quantity || 0,
-      image: product.image_url || '/placeholder.svg'
-    }));
+    // Group by product and sum quantities
+    const productMap = new Map();
+    
+    productData.forEach(item => {
+      const productId = item.product_id;
+      const currentQuantity = productMap.get(productId)?.unitsSold || 0;
+      
+      productMap.set(productId, {
+        id: productId,
+        name: item.products?.name || 'Unknown Product',
+        price: formatPrice(item.products?.price || 0),
+        unitsSold: currentQuantity + item.quantity,
+        image: item.products?.image_url || '/placeholder.svg'
+      });
+    });
+    
+    return Array.from(productMap.values());
   } catch (error) {
     console.error('Error fetching top products:', error);
     // Return sample data if query fails
