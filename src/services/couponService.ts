@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Coupon } from "@/types/coupon";
+import { Coupon, CouponType, CouponStatus } from "@/types/coupon";
 
 export const getCoupons = async (): Promise<Coupon[]> => {
   try {
@@ -16,19 +16,21 @@ export const getCoupons = async (): Promise<Coupon[]> => {
     return data.map(coupon => ({
       id: coupon.id,
       code: coupon.code,
-      type: coupon.type,
+      type: coupon.type as CouponType,
       value: coupon.value,
       startDate: coupon.start_date,
       endDate: coupon.end_date,
       usageCount: coupon.usage_count || 0,
       usageLimit: coupon.usage_limit,
-      status: coupon.status || 'active',
+      status: coupon.status as CouponStatus || 'active',
       description: coupon.description || '',
       minPurchase: coupon.min_purchase,
       maxDiscount: coupon.max_discount,
-      applicableProducts: coupon.applicable_products,
-      applicableCategories: coupon.applicable_categories,
-      perCustomer: coupon.per_customer
+      applicableProducts: coupon.applicable_products as "all" | "specific",
+      applicableCategories: coupon.applicable_categories as "all" | "specific",
+      perCustomer: coupon.per_customer,
+      createdAt: coupon.created_at,
+      updatedAt: coupon.updated_at
     }));
   } catch (error) {
     console.error("Error getting coupons:", error);
@@ -36,7 +38,7 @@ export const getCoupons = async (): Promise<Coupon[]> => {
   }
 };
 
-export const createCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coupon> => {
+export const createCoupon = async (couponData: Omit<Coupon, 'id' | 'createdAt' | 'updatedAt'>): Promise<Coupon> => {
   try {
     const { data, error } = await supabase
       .from('coupon_codes')
@@ -66,19 +68,21 @@ export const createCoupon = async (couponData: Omit<Coupon, 'id'>): Promise<Coup
     return {
       id: data.id,
       code: data.code,
-      type: data.type,
+      type: data.type as CouponType,
       value: data.value,
       startDate: data.start_date,
       endDate: data.end_date,
       usageCount: data.usage_count || 0,
       usageLimit: data.usage_limit,
-      status: data.status || 'active',
+      status: data.status as CouponStatus || 'active',
       description: data.description || '',
       minPurchase: data.min_purchase,
       maxDiscount: data.max_discount,
-      applicableProducts: data.applicable_products,
-      applicableCategories: data.applicable_categories,
-      perCustomer: data.per_customer
+      applicableProducts: data.applicable_products as "all" | "specific",
+      applicableCategories: data.applicable_categories as "all" | "specific",
+      perCustomer: data.per_customer,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
     };
   } catch (error) {
     console.error("Error creating coupon:", error);
@@ -118,19 +122,21 @@ export const updateCoupon = async (id: string, couponData: Partial<Coupon>): Pro
     return {
       id: data.id,
       code: data.code,
-      type: data.type,
+      type: data.type as CouponType,
       value: data.value,
       startDate: data.start_date,
       endDate: data.end_date,
       usageCount: data.usage_count || 0,
       usageLimit: data.usage_limit,
-      status: data.status || 'active',
+      status: data.status as CouponStatus || 'active',
       description: data.description || '',
       minPurchase: data.min_purchase,
       maxDiscount: data.max_discount,
-      applicableProducts: data.applicable_products,
-      applicableCategories: data.applicable_categories,
-      perCustomer: data.per_customer
+      applicableProducts: data.applicable_products as "all" | "specific",
+      applicableCategories: data.applicable_categories as "all" | "specific",
+      perCustomer: data.per_customer,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
     };
   } catch (error) {
     console.error("Error updating coupon:", error);

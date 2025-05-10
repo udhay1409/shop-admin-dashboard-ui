@@ -54,9 +54,10 @@ export const getRevenueData = async () => {
 export const getTopProducts = async () => {
   try {
     // Get products with most order items
-    const { data, error } = await supabase.rpc('get_top_products', { limit_num: 5 });
+    const { data: functionData, error: functionError } = await supabase
+      .rpc('get_top_products', { limit_num: 5 });
     
-    if (error) {
+    if (functionError || !functionData) {
       // If RPC function doesn't exist, use a direct query
       const { data: fallbackData, error: fallbackError } = await supabase
         .from('order_items')
@@ -92,7 +93,7 @@ export const getTopProducts = async () => {
     }
     
     // Format data from RPC function
-    return data.map(product => ({
+    return functionData.map((product: any) => ({
       id: product.product_id,
       name: product.product_name || 'Unknown Product',
       price: formatPrice(product.price || 0),
@@ -172,6 +173,32 @@ export const getSalesReportData = async (from: Date, to: Date) => {
     };
   } catch (error) {
     console.error('Error fetching sales report data:', error);
+    throw error;
+  }
+};
+
+// Add the missing function
+export const generateDashboardReport = async () => {
+  try {
+    // Fetch data for the report
+    const currentDate = new Date();
+    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    
+    const salesData = await getSalesReportData(firstDayOfMonth, currentDate);
+    const topProductsData = await getTopProducts();
+    
+    // Return compiled report data
+    return {
+      generatedAt: new Date().toISOString(),
+      period: {
+        from: firstDayOfMonth.toISOString(),
+        to: currentDate.toISOString()
+      },
+      salesSummary: salesData.summary,
+      topProducts: topProductsData.slice(0, 5)
+    };
+  } catch (error) {
+    console.error('Error generating dashboard report:', error);
     throw error;
   }
 };
