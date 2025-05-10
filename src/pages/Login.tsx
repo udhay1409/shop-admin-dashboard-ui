@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -34,7 +35,12 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const { login } = useAuth();
+  
+  // Check if we have a redirect path
+  const from = location.state?.from?.pathname || '/store';
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -46,21 +52,17 @@ const Login = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
-      // In a real app, send a request to your authentication API
-      console.log('Login values:', values);
+      const success = await login(values.email, values.password);
       
-      // Simulate login success
-      toast({
-        title: 'Login successful',
-        description: 'Welcome back!',
-      });
-      
-      // Redirect to dashboard after successful login
-      navigate('/');
+      if (success) {
+        // Redirect to the previous page or store homepage
+        navigate(from, { replace: true });
+      }
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: 'Login failed',
-        description: 'Invalid email or password',
+        description: 'An unexpected error occurred.',
         variant: 'destructive',
       });
     }

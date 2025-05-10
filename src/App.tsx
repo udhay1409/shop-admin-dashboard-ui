@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import AdminLayout from "./components/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
@@ -25,6 +25,7 @@ import POS from "./pages/POS";
 import StoreFront from "./pages/StoreFront";
 import Subcategories from "./pages/Subcategories";
 import HomePage from "./pages/HomePage";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,50 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// Router wrapper with auth provider
+const AppWithAuth = () => {
+  return (
+    <AuthProvider>
+      <Routes>
+        {/* Store Frontend - Fix: Use a proper nested route structure */}
+        <Route path="/store/*" element={<StoreFront />} />
+
+        {/* Authentication routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* Protected admin routes */}
+        <Route path="/" element={
+          <AdminRoute>
+            <AdminLayout />
+          </AdminRoute>
+        }>
+          <Route index element={<Dashboard />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="products" element={<Products />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="subcategories" element={<Subcategories />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="delivery" element={<Delivery />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="vendors" element={<Vendors />} />
+          <Route path="inventory" element={<Inventory />} />
+          <Route path="coupon-code" element={<CouponCodes />} />
+          <Route path="reviews" element={<Reviews />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="transaction-logs" element={<TransactionLogs />} />
+          <Route path="pos" element={<POS />} />
+          <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
+          {/* Other routes will be added as they're needed */}
+          <Route path="*" element={<NotFound />} />
+        </Route>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AuthProvider>
+  );
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -65,42 +110,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <Routes>
-            {/* Store Frontend - Fix: Use a proper nested route structure */}
-            <Route path="/store/*" element={<StoreFront />} />
-
-            {/* Authentication routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-
-            {/* Protected admin routes */}
-            <Route path="/" element={
-              <AdminRoute>
-                <AdminLayout />
-              </AdminRoute>
-            }>
-              <Route index element={<Dashboard />} />
-              <Route path="orders" element={<Orders />} />
-              <Route path="products" element={<Products />} />
-              <Route path="categories" element={<Categories />} />
-              <Route path="subcategories" element={<Subcategories />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="delivery" element={<Delivery />} />
-              <Route path="customers" element={<Customers />} />
-              <Route path="vendors" element={<Vendors />} />
-              <Route path="inventory" element={<Inventory />} />
-              <Route path="coupon-code" element={<CouponCodes />} />
-              <Route path="reviews" element={<Reviews />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="transaction-logs" element={<TransactionLogs />} />
-              <Route path="pos" element={<POS />} />
-              <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
-              {/* Other routes will be added as they're needed */}
-              <Route path="*" element={<NotFound />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppWithAuth />
         </TooltipProvider>
       </Router>
     </QueryClientProvider>

@@ -26,6 +26,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import VerifyEmail from '@/components/auth/VerifyEmail';
+import { useAuth } from '@/contexts/AuthContext';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -45,6 +46,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
@@ -63,20 +65,15 @@ const Register = () => {
 
   const onSubmit = async (values: RegisterFormValues) => {
     try {
-      // In a real app, send a request to your registration API
-      console.log('Register values:', values);
+      const success = await register(values.name, values.email, values.password);
       
-      // Store email for verification screen
-      setUserEmail(values.email);
-      
-      // Show verification screen
-      setIsRegistered(true);
-      
-      // Show success toast
-      toast({
-        title: 'Registration successful',
-        description: 'Please check your email to verify your account.',
-      });
+      if (success) {
+        // Store email for verification screen
+        setUserEmail(values.email);
+        
+        // Show verification screen
+        setIsRegistered(true);
+      }
     } catch (error) {
       toast({
         title: 'Registration failed',

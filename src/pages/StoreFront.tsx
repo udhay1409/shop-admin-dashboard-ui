@@ -13,9 +13,10 @@ import {
   ShoppingCart,
   User,
   Heart,
+  LogOut,
 } from 'lucide-react';
 import AdminBar from '@/components/AdminBar';
-import { Link, Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { Link, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import HomePage from './HomePage';
 import CategoryPage from './store/CategoryPage';
 import SubcategoryPage from './store/SubcategoryPage';
@@ -23,13 +24,30 @@ import ProductDetailPage from './store/ProductDetailPage';
 import CartPage from './store/CartPage';
 import CheckoutPage from './store/CheckoutPage';
 import OrderConfirmationPage from './store/OrderConfirmationPage';
+import AccountDashboard from './store/AccountDashboard';
+import WishlistPage from './store/WishlistPage';
 import NotFound from './NotFound';
 import DynamicNavigation from '@/components/store/DynamicNavigation';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Protected route component for store
+const StoreProtectedRoute = ({ children }) => {
+  const { user } = useAuth();
+  const location = useLocation();
+  
+  if (!user) {
+    // Redirect to the login page with the current location
+    return <Navigate to="/store/login" state={{ from: location }} replace />;
+  }
+  
+  return children;
+};
 
 const StoreFront: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
+  const { user, logout } = useAuth();
   
   // Simple admin check (in a real app, use proper auth)
   const isAdmin = true; // Replace with actual auth logic
@@ -104,12 +122,6 @@ const StoreFront: React.FC = () => {
                 />
               </div>
               
-              <Link to="/store/account">
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
-              
               <Link to="/store/wishlist">
                 <Button variant="ghost" size="icon" className="relative">
                   <Heart className="h-5 w-5" />
@@ -128,14 +140,34 @@ const StoreFront: React.FC = () => {
                 </Button>
               </Link>
               
-              <Link to="/store/login">
-                <Button
-                  className="ml-2 bg-[#EC008C] hover:bg-[#D1007D]"
-                  size="sm"
-                >
-                  Login
-                </Button>
-              </Link>
+              {user ? (
+                <div className="flex items-center space-x-2">
+                  <Link to="/store/account">
+                    <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <span className="hidden md:inline">{user.name.split(' ')[0]}</span>
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={logout} 
+                    className="text-red-500"
+                    title="Logout"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Link to="/store/login">
+                  <Button
+                    className="ml-2 bg-[#EC008C] hover:bg-[#D1007D]"
+                    size="sm"
+                  >
+                    Login
+                  </Button>
+                </Link>
+              )}
               
               {isAdmin && (
                 <Link to="/">
@@ -243,6 +275,29 @@ const StoreFront: React.FC = () => {
                 Cart
               </Link>
             </Button>
+            
+            {user ? (
+              <Button 
+                variant="outline" 
+                className="w-full justify-start text-red-500 border-red-200" 
+                onClick={() => {
+                  logout();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            ) : (
+              <Button 
+                className="w-full bg-[#EC008C] hover:bg-[#D1007D]"
+                asChild
+              >
+                <Link to="/store/login" onClick={() => setMobileMenuOpen(false)}>
+                  Login
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -257,6 +312,19 @@ const StoreFront: React.FC = () => {
           <Route path="cart" element={<CartPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
           <Route path="order-confirmation" element={<OrderConfirmationPage />} />
+          <Route path="wishlist" element={<WishlistPage />} />
+          
+          {/* Account routes - protected */}
+          <Route path="account/*" element={
+            <StoreProtectedRoute>
+              <AccountDashboard />
+            </StoreProtectedRoute>
+          } />
+          
+          {/* Login/Register routes */}
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
