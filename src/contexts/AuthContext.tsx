@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Customer } from '@/types/customer';
 import { supabase } from '@/integrations/supabase/client';
+import { Profile, UserRole } from '@/types/supabase';
 
 // Define the shape of our auth context
 interface AuthContextType {
@@ -65,9 +66,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       if (!user) return null;
 
+      // Using Supabase's generic table query since we don't have type definitions
       const { data, error } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('*')
         .eq('user_id', user.id)
         .single();
 
@@ -144,7 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Fetch user role
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
-          .select('role')
+          .select('*')
           .eq('user_id', data.user.id)
           .single();
           
@@ -160,9 +162,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const updatedUser: Customer = {
           id: data.user.id,
           email: data.user.email || '',
-          name: profileData?.first_name && profileData?.last_name 
-            ? `${profileData.first_name} ${profileData.last_name}`
-            : data.user.email?.split('@')[0] || 'User',
+          name: profileData ? 
+            `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
+            data.user.email?.split('@')[0] || 'User',
           status: 'Active',
           joinedDate: data.user.created_at || new Date().toISOString(),
           lastLoginDate: new Date().toISOString(),
@@ -208,14 +210,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // In a real app, you would make an API request to create the user
       // We'll use Supabase Auth to create the user
+      const firstName = name.split(' ')[0];
+      const lastName = name.split(' ').slice(1).join(' ');
       
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            first_name: name.split(' ')[0],
-            last_name: name.split(' ').slice(1).join(' ')
+            first_name: firstName,
+            last_name: lastName
           }
         }
       });
@@ -288,11 +292,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Update the profile in Supabase
         if (user.id) {
+          const nameParts = updatedUser.name.split(' ');
+          const firstName = nameParts[0];
+          const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+          
           const { error } = await supabase
             .from('profiles')
             .update({
-              first_name: updatedUser.name.split(' ')[0],
-              last_name: updatedUser.name.split(' ').slice(1).join(' '),
+              first_name: firstName,
+              last_name: lastName,
               phone: updatedUser.phone
             })
             .eq('id', user.id);
