@@ -16,7 +16,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import AdminBar from '@/components/AdminBar';
-import { Link, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { Link, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import HomePage from './HomePage';
 import CategoryPage from './store/CategoryPage';
 import SubcategoryPage from './store/SubcategoryPage';
@@ -29,8 +29,6 @@ import WishlistPage from './store/WishlistPage';
 import NotFound from './NotFound';
 import DynamicNavigation from '@/components/store/DynamicNavigation';
 import { useAuth } from '@/contexts/AuthContext';
-import Login from './Login';
-import Register from './Register';
 
 // Protected route component for store
 const StoreProtectedRoute = ({ children }) => {
@@ -55,6 +53,7 @@ const StoreFront: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout, userRole, isLoading } = useAuth();
   
   // Helper to get user display name
@@ -67,13 +66,25 @@ const StoreFront: React.FC = () => {
   
   // Only redirect admin users when they access the root /store path and not subpaths
   useEffect(() => {
+    // Fix: Only redirect if user has loaded, is admin, and path is exactly /store
     if (!isLoading && user && userRole === 'admin' && location.pathname === '/store') {
-      window.location.href = '/dashboard';
+      // Fix: Use navigate instead of directly changing location
+      navigate('/dashboard', { replace: true });
     }
-  }, [user, userRole, location.pathname, isLoading]);
+  }, [user, userRole, location.pathname, isLoading, navigate]);
   
   // Simple admin check
   const isAdmin = userRole === 'admin';
+  
+  // Fix: Function to handle logout properly
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -174,11 +185,7 @@ const StoreFront: React.FC = () => {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    onClick={() => {
-                      logout();
-                      // After logout, redirect to login
-                      window.location.href = '/login';
-                    }} 
+                    onClick={handleLogout} 
                     className="text-red-500"
                     title="Logout"
                   >
@@ -308,10 +315,8 @@ const StoreFront: React.FC = () => {
                 variant="outline" 
                 className="w-full justify-start text-red-500 border-red-200" 
                 onClick={() => {
-                  logout();
+                  handleLogout();
                   setMobileMenuOpen(false);
-                  // After logout, redirect to login
-                  window.location.href = '/login';
                 }}
               >
                 <LogOut className="h-4 w-4 mr-2" />
@@ -322,7 +327,7 @@ const StoreFront: React.FC = () => {
                 className="w-full bg-[#EC008C] hover:bg-[#D1007D]"
                 asChild
               >
-                <Link to="/store/login" onClick={() => setMobileMenuOpen(false)}>
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                   Login
                 </Link>
               </Button>

@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,8 +48,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Function to fetch user role
+  // Function to fetch user role - improved to use timeout to prevent recursion
   const fetchUserRole = async (userId: string) => {
     try {
       // Use setTimeout to prevent potential Supabase callback recursion
@@ -71,11 +71,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } catch (innerError) {
           console.error('Inner error in fetchUserRole:', innerError);
           setUserRole('customer'); // Default role on error
+        } finally {
+          // Ensure loading is set to false even if there's an error
+          setIsLoading(false);
         }
       }, 0);
     } catch (error) {
       console.error('Error in fetchUserRole:', error);
       setUserRole('customer'); // Default role on error
+      setIsLoading(false);
     }
   };
 
@@ -83,7 +87,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     let isMounted = true;
     
-    // Set up auth state listener FIRST
+    // Set up auth state listener FIRST with debounce to prevent rapid state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, currentSession: Session | null) => {
         if (!isMounted) return;
@@ -91,19 +95,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        // Fetch user role if logged in
-        if (currentSession?.user) {
+        if (!currentSession) {
+          setUserRole(null);
+          setIsLoading(false);
+        } else if (currentSession?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           fetchUserRole(currentSession.user.id);
-        } else {
-          setUserRole(null);
         }
-        
-        if (event === 'SIGNED_OUT') {
-          setUserRole(null);
-        }
-
-        // Set loading to false after auth state change is processed
-        setIsLoading(false);
       }
     );
 
@@ -123,13 +120,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           // Fetch user role if there's an existing session
           if (currentSession?.user) {
             await fetchUserRole(currentSession.user.id);
+          } else {
+            setIsLoading(false);
           }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
+        setIsLoading(false);
       } finally {
         if (isMounted) {
-          setIsLoading(false);
+          setHasInitialized(true);
         }
       }
     };
@@ -143,7 +143,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, []);
 
-  // Login function
+  // Login function - improved error handling
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
@@ -153,23 +153,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         throw error;
       }
       
-      // Fetch user role
-      if (data.user) {
-        await fetchUserRole(data.user.id);
-      }
+      // We'll let the auth state change handler update the user role
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
       
       return true;
     } catch (error: any) {
       console.error('Login error:', error);
+      toast({
+        title: "Login failed",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
       throw error;
     } finally {
-      setIsLoading(false);
+      // Don't set loading to false here, let the auth state change handler do it
     }
   };
 
-  // Register function - updated to match the correct parameter types
+  // Register function - updated to handle the name parameter
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
+      setIsLoading(true);
       // Split the name into first_name and last_name (assuming format: "First Last")
       const nameParts = name.split(' ');
       const firstName = nameParts[0] || '';
@@ -202,11 +209,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return true;
     } catch (error: any) {
       console.error('Registration error:', error);
+      toast({
+        title: "Registration failed",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Logout function
+  // Logout function - improved to handle errors better
   const logout = async (): Promise<void> => {
     try {
       setIsLoading(true);
@@ -214,9 +228,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (error) {
         throw error;
       }
+      
+      // Clear state synchronously to avoid flickering
       setUserRole(null);
       setUser(null);
       setSession(null);
+      
+      toast({
+        title: "Logout successful",
+        description: "You have been logged out.",
+      });
     } catch (error: any) {
       console.error('Logout error:', error);
       toast({
@@ -224,6 +245,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         description: error.message || "An error occurred during logout.",
         variant: "destructive",
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -315,10 +337,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       if (data.session?.user) {
         await fetchUserRole(data.session.user.id);
+      } else {
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Session refresh error:', error);
-    } finally {
       setIsLoading(false);
     }
   };

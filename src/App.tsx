@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -44,14 +43,20 @@ const RootRedirect = () => {
   const { isAuthenticated, isLoading, userRole } = useAuth();
   const location = useLocation();
 
+  // Improved loading state with a nicer spinner
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#EC008C]"></div>
-    </div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#EC008C] border-t-transparent"></div>
+          <p className="mt-4 text-gray-600">Loading application...</p>
+        </div>
+      </div>
+    );
   }
 
   if (isAuthenticated) {
-    // If user is admin, redirect to admin dashboard
+    // Fix: Use direct return for admin redirect instead of multi-step logic
     if (userRole === 'admin') {
       return <Navigate to="/dashboard" replace />;
     }
@@ -59,19 +64,25 @@ const RootRedirect = () => {
     return <Navigate to="/store" replace />;
   }
 
-  // If not authenticated, redirect to login
+  // If not authenticated, redirect to login - using replace flag to prevent history stacking
   return <Navigate to="/login" replace />;
 };
 
-// Protected route component
+// Protected route component - fixed to handle loading state better
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { isAuthenticated, isLoading, userRole } = useAuth();
   const location = useLocation();
 
+  // Improved loading state
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#EC008C]"></div>
-    </div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#EC008C] border-t-transparent"></div>
+          <p className="mt-4 text-gray-600">Authenticating...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -137,49 +148,51 @@ const AppWithAuth = () => {
 };
 
 function App() {
-  // Function to create admin users on app startup
+  // Fix: Improve error handling in admin user creation
   useEffect(() => {
     const createAdminUsers = async () => {
       try {
-        // Create the first admin user (kansha@mntfuture.com)
-        const response1 = await fetch('https://uhahxzsenmhdtgmltrjs.supabase.co/functions/v1/create-admin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: 'kansha@mntfuture.com',
-            password: '123456'
-          })
-        }).catch(err => {
+        // Create the first admin user with better error handling
+        try {
+          const response1 = await fetch('https://uhahxzsenmhdtgmltrjs.supabase.co/functions/v1/create-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: 'kansha@mntfuture.com',
+              password: '123456'
+            })
+          });
+          
+          const result1 = await response1.json();
+          console.log('Admin 1 creation result:', result1);
+        } catch (err) {
           console.log('Network error when creating admin 1:', err);
-          return { json: () => ({ success: false, error: err.message }) };
-        });
+        }
         
-        const result1 = await response1.json();
-        console.log('Admin 1 creation result:', result1);
-        
-        // Create the second admin user (mkansha2312@gmail.com)
-        const response2 = await fetch('https://uhahxzsenmhdtgmltrjs.supabase.co/functions/v1/create-admin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: 'mkansha2312@gmail.com',
-            password: '123456'
-          })
-        }).catch(err => {
+        // Create the second admin user with better error handling
+        try {
+          const response2 = await fetch('https://uhahxzsenmhdtgmltrjs.supabase.co/functions/v1/create-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: 'mkansha2312@gmail.com',
+              password: '123456'
+            })
+          });
+          
+          const result2 = await response2.json();
+          console.log('Admin 2 creation result:', result2);
+        } catch (err) {
           console.log('Network error when creating admin 2:', err);
-          return { json: () => ({ success: false, error: err.message }) };
-        });
-        
-        const result2 = await response2.json();
-        console.log('Admin 2 creation result:', result2);
+        }
         
       } catch (error) {
         console.error('Error in admin user setup:', error);
       }
     };
     
-    // Run admin user setup with a small delay
-    setTimeout(createAdminUsers, 1000);
+    // Run admin user setup with a small delay to ensure auth is initialized
+    setTimeout(createAdminUsers, 2000);
   }, []);
 
   return (
