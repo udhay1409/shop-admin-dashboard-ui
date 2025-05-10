@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Store, CreditCard, Bell, Shield, Globe, Palette } from "lucide-react";
+import { Settings, Store, CreditCard, Bell, Shield, Globe, Palette, Mail } from "lucide-react";
 import ProfileSettings from "@/components/settings/ProfileSettings";
 import StoreSettings from "@/components/settings/StoreSettings";
 import PaymentSettings from "@/components/settings/PaymentSettings";
@@ -12,6 +12,7 @@ import NotificationSettings from "@/components/settings/NotificationSettings";
 import SecuritySettings from "@/components/settings/SecuritySettings";
 import LocalizationSettings from "@/components/settings/LocalizationSettings";
 import AppearanceSettings from "@/components/settings/AppearanceSettings";
+import SMTPSettings from "@/components/settings/SMTPSettings";
 
 const SettingsPage: React.FC = () => {
   const { toast } = useToast();
@@ -27,7 +28,7 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-2 md:grid-cols-7 gap-2">
+        <TabsList className="grid grid-cols-2 md:grid-cols-8 gap-2">
           <TabsTrigger value="profile" className="flex flex-col sm:flex-row gap-2 items-center">
             <Settings size={18} />
             <span className="hidden md:block">Profile</span>
@@ -39,6 +40,10 @@ const SettingsPage: React.FC = () => {
           <TabsTrigger value="payment" className="flex flex-col sm:flex-row gap-2 items-center">
             <CreditCard size={18} />
             <span className="hidden md:block">Payment</span>
+          </TabsTrigger>
+          <TabsTrigger value="smtp" className="flex flex-col sm:flex-row gap-2 items-center">
+            <Mail size={18} />
+            <span className="hidden md:block">Email</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex flex-col sm:flex-row gap-2 items-center">
             <Bell size={18} />
@@ -68,6 +73,10 @@ const SettingsPage: React.FC = () => {
         
         <TabsContent value="payment">
           <PaymentSettings />
+        </TabsContent>
+        
+        <TabsContent value="smtp">
+          <SMTPSettings />
         </TabsContent>
         
         <TabsContent value="notifications">
