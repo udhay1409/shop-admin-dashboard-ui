@@ -66,14 +66,77 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Check if user is already logged in (from localStorage)
+  // Initialize authentication and set up auth state listener
   useEffect(() => {
-    const checkAuth = async () => {
-      // Get session from Supabase
-      const { data: { session } } = await supabase.auth.getSession();
+    const initAuth = async () => {
+      setIsLoading(true);
       
-      if (session?.user) {
-        try {
+      // Set up auth state listener FIRST
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (session?.user) {
+            // Using setTimeout to avoid potential deadlock with Supabase
+            setTimeout(async () => {
+              try {
+                // Fetch profile data
+                const { data: profileData, error: profileError } = await supabase
+                  .from('profiles')
+                  .select('*')
+                  .eq('id', session.user.id)
+                  .single();
+                  
+                if (profileError) {
+                  console.error('Error fetching profile:', profileError);
+                }
+                
+                // Fetch user role
+                const { data: roleData, error: roleError } = await supabase
+                  .from('user_roles')
+                  .select('*')
+                  .eq('user_id', session.user.id)
+                  .single();
+                  
+                if (roleError && roleError.code !== 'PGRST116') { // PGRST116 is "row not found" error
+                  console.error('Error fetching role:', roleError);
+                }
+                
+                // Get role (default to customer if none found)
+                const role = roleData?.role || 'customer';
+                setUserRole(role as 'admin' | 'staff' | 'customer');
+
+                // Create a merged user object with profile data and auth data
+                const userData: Customer = {
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  name: profileData ? 
+                    `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
+                    session.user.email?.split('@')[0] || 'User',
+                  status: 'Active',
+                  joinedDate: session.user.created_at || new Date().toISOString(),
+                  lastLoginDate: new Date().toISOString(),
+                  phone: profileData?.phone || '',
+                  totalOrders: 0,
+                  totalSpent: 0,
+                  emailSubscription: true
+                };
+                
+                setUser(userData);
+              } catch (error) {
+                console.error('Error processing auth state change:', error);
+              }
+            }, 0);
+          } else {
+            setUser(null);
+            setUserRole(null);
+          }
+        }
+      );
+  
+      // THEN check for existing session
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
           // Fetch profile data
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
@@ -117,16 +180,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           };
           
           setUser(userData);
-        } catch (error) {
-          console.error('Error during authentication check:', error);
-          localStorage.removeItem('user');
         }
+      } catch (error) {
+        console.error('Error during authentication check:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
+  
+      return () => {
+        subscription.unsubscribe();
+      };
     };
-
-    checkAuth();
+  
+    initAuth();
   }, []);
 
   // Login function
@@ -190,9 +256,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           emailSubscription: true
         };
         
-        // Save the user to state and localStorage
+        // Save the user to state
         setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
         
         toast({
           title: "Login successful",
@@ -289,7 +354,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await supabase.auth.signOut();
       setUser(null);
       setUserRole(null);
-      localStorage.removeItem('user');
       toast({
         title: "Logged out",
         description: "You have been logged out successfully.",
@@ -333,7 +397,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         
         setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
         
         toast({
           title: "Profile updated",
