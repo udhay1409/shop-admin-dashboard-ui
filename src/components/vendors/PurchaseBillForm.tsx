@@ -50,7 +50,7 @@ const purchaseBillSchema = z.object({
 });
 
 type PurchaseBillFormValues = z.infer<typeof purchaseBillSchema>;
-type BillItem = z.infer<typeof billItemSchema>;
+type BillItem = z.infer<typeof billItemSchema> & { total?: number };
 
 interface Vendor {
   id: string;
@@ -93,7 +93,13 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
         price: parseFloat(itemPrice)
       });
       
-      setItems([...items, newItem]);
+      // Calculate total when adding the item
+      const itemWithTotal = {
+        ...newItem,
+        total: newItem.quantity * newItem.price
+      };
+      
+      setItems([...items, itemWithTotal]);
       form.setValue('items', [...items, newItem]);
       
       // Clear inputs
@@ -140,7 +146,9 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
       
       // Map items with total calculated
       const billItems = data.items.map(item => ({
-        ...item,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
         total: item.quantity * item.price
       }));
       

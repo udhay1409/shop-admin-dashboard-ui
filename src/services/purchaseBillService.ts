@@ -50,7 +50,11 @@ export async function getPurchaseBills(): Promise<PurchaseBill[]> {
       return [];
     }
 
-    return data || [];
+    // Cast the status field to ensure type safety
+    return (data || []).map(bill => ({
+      ...bill,
+      status: bill.status === 'Paid' ? 'Paid' : 'Pending'
+    })) as PurchaseBill[];
   } catch (error: any) {
     console.error('Exception fetching purchase bills:', error);
     return [];
@@ -74,7 +78,11 @@ export async function getVendorPurchaseBills(vendorId: string): Promise<Purchase
       return [];
     }
 
-    return data || [];
+    // Cast the status field to ensure type safety
+    return (data || []).map(bill => ({
+      ...bill,
+      status: bill.status === 'Paid' ? 'Paid' : 'Pending'
+    })) as PurchaseBill[];
   } catch (error) {
     console.error('Exception fetching vendor purchase bills:', error);
     return [];
@@ -111,8 +119,9 @@ export async function getPurchaseBillWithItems(billId: string): Promise<Purchase
 
     return {
       ...bill,
+      status: bill.status === 'Paid' ? 'Paid' : 'Pending',
       items: items || []
-    };
+    } as PurchaseBill;
   } catch (error) {
     console.error('Exception fetching bill with items:', error);
     return null;
@@ -180,7 +189,11 @@ export async function createPurchaseBill(
       description: 'New purchase bill has been added successfully.',
     });
     
-    return { ...newBill, items };
+    return { 
+      ...newBill, 
+      status: newBill.status === 'Paid' ? 'Paid' : 'Pending',
+      items: items as PurchaseBillItem[] 
+    };
   } catch (error: any) {
     console.error('Exception creating purchase bill:', error);
     toast({
