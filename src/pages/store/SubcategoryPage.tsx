@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +9,8 @@ import BreadcrumbNav from '@/components/store/BreadcrumbNav';
 import useProductInventory from '@/hooks/useProductInventory';
 import { Product, ProductColor, ProductSize } from '@/types/product';
 import { Category } from '@/types/category';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const SubcategoryPage: React.FC = () => {
   const { categorySlug, subcategorySlug } = useParams<{ categorySlug: string, subcategorySlug: string }>();
@@ -17,91 +18,98 @@ const SubcategoryPage: React.FC = () => {
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategory, setSubcategory] = useState<Category | null>(null);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Simulate fetching category and subcategory details 
-  // In a real app, you would fetch this from your backend
+  // Fetch category and subcategory details
   useEffect(() => {
-    // Mock data for demonstration purposes
-    const mockCategories: Category[] = [
-      {
-        id: '1',
-        name: 'Kurthi',
-        slug: 'kurthi',
-        description: 'Beautiful kurthi collection',
-        status: 'Active',
-        productsCount: 42,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        color: '#EC008C',
-      },
-      {
-        id: '2',
-        name: 'Salwar Suits',
-        slug: 'salwar-suits',
-        description: 'Elegant salwar suits',
-        status: 'Active',
-        productsCount: 36,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        color: '#EC008C',
+    const fetchCategoryData = async () => {
+      setLoading(true);
+      
+      try {
+        // Fetch parent category by slug
+        const { data: categoryData, error: categoryError } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('slug', categorySlug)
+          .single();
+          
+        if (categoryError || !categoryData) {
+          console.error('Error fetching category:', categoryError);
+          setLoading(false);
+          return;
+        }
+        
+        // Format parent category
+        const formattedCategory: Category = {
+          id: categoryData.id,
+          name: categoryData.name,
+          slug: categoryData.slug,
+          description: categoryData.description || '',
+          status: categoryData.status as Category['status'],
+          imageUrl: categoryData.image_url,
+          productsCount: categoryData.products_count || 0,
+          createdAt: categoryData.created_at,
+          updatedAt: categoryData.updated_at,
+          parentId: categoryData.parent_id,
+          color: categoryData.color || '#EC008C',
+        };
+        
+        setCategory(formattedCategory);
+        
+        // Fetch subcategory by slug and parent relationship
+        const { data: subcategoryData, error: subcategoryError } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('slug', subcategorySlug)
+          .eq('parent_id', formattedCategory.id)
+          .single();
+          
+        if (subcategoryError || !subcategoryData) {
+          console.error('Error fetching subcategory:', subcategoryError);
+          setLoading(false);
+          return;
+        }
+        
+        // Format subcategory
+        const formattedSubcategory: Category = {
+          id: subcategoryData.id,
+          name: subcategoryData.name,
+          slug: subcategoryData.slug,
+          description: subcategoryData.description || '',
+          status: subcategoryData.status as Category['status'],
+          imageUrl: subcategoryData.image_url,
+          productsCount: subcategoryData.products_count || 0,
+          createdAt: subcategoryData.created_at,
+          updatedAt: subcategoryData.updated_at,
+          parentId: subcategoryData.parent_id,
+          color: subcategoryData.color || '#EC008C',
+        };
+        
+        setSubcategory(formattedSubcategory);
+        
+        // Filter products
+        // In a real app with proper relationships, you would use a join to get products by category_id
+        // For now, filter products from the useProductInventory hook by matching subcategory name
+        const subcategoryProducts = products
+          .filter(p => p.status === 'Active')
+          .filter(p => 
+            p.subcategory === formattedSubcategory.name || 
+            p.category === formattedSubcategory.name
+          )
+          .map(enhanceProduct)
+          .slice(0, 12);
+          
+        setFilteredProducts(subcategoryProducts);
+      } catch (error) {
+        console.error('Error in subcategory page:', error);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
     
-    const mockSubcategories: Category[] = [
-      {
-        id: '101',
-        name: 'Long Kurthi',
-        slug: 'long-kurthi',
-        description: 'Long Kurthi collection',
-        status: 'Active',
-        productsCount: 24,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        parentId: '1',
-        color: '#EC008C',
-      },
-      {
-        id: '102',
-        name: 'Short Kurthi',
-        slug: 'short-kurthi',
-        description: 'Short Kurthi collection',
-        status: 'Active',
-        productsCount: 18,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        parentId: '1',
-        color: '#EC008C',
-      },
-      {
-        id: '201',
-        name: 'Anarkali Suits',
-        slug: 'anarkali-suits',
-        description: 'Anarkali Suits collection',
-        status: 'Active',
-        productsCount: 15,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        parentId: '2',
-        color: '#EC008C',
-      }
-    ];
-    
-    const foundCategory = mockCategories.find(cat => cat.slug === categorySlug);
-    const foundSubcategory = mockSubcategories.find(subcat => subcat.slug === subcategorySlug && subcat.parentId === foundCategory?.id);
-    
-    setCategory(foundCategory || null);
-    setSubcategory(foundSubcategory || null);
-    
-    // Filter products by subcategory
-    // In a real app, you would fetch products by subcategory ID from your backend
-    const subcategoryProducts = products
-      .filter(p => p.status === 'Active')
-      .filter(p => p.subcategory === foundSubcategory?.name || p.category === foundSubcategory?.name)
-      .map(enhanceProduct)
-      .slice(0, 12);
-    
-    setFilteredProducts(subcategoryProducts);
-    
+    if (categorySlug && subcategorySlug) {
+      fetchCategoryData();
+    }
   }, [categorySlug, subcategorySlug, products]);
   
   // Helper function to enhance product with additional properties for display
@@ -217,6 +225,24 @@ const SubcategoryPage: React.FC = () => {
       </Card>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-4">
+        <Skeleton className="h-6 w-72 mb-4" />
+        <Skeleton className="h-12 w-full mb-6" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          {Array(8).fill(0).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-56 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (!category || !subcategory) {
     return (

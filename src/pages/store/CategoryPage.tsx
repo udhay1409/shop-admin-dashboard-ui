@@ -7,96 +7,82 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import BreadcrumbNav from '@/components/store/BreadcrumbNav';
 import useProductInventory from '@/hooks/useProductInventory';
 import { Category } from '@/types/category';
+import { getSubcategories } from '@/services/categoryService';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const CategoryPage: React.FC = () => {
   const { categorySlug } = useParams<{ categorySlug: string }>();
   const { products } = useProductInventory();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<Category[]>([]);
-
-  // Simulating fetching category details and subcategories
-  // In a real app, you would fetch this from your backend
+  const [loading, setLoading] = useState(true);
+  
+  // Fetch category details and subcategories
   useEffect(() => {
-    // Simulate fetching category by slug
-    const formattedSlug = categorySlug?.toLowerCase();
-    
-    // Mock data for demonstration purposes
-    const mockCategories: Category[] = [
-      {
-        id: '1',
-        name: 'Kurthi',
-        slug: 'kurthi',
-        description: 'Beautiful kurthi collection',
-        status: 'Active',
-        productsCount: 42,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        color: '#EC008C',
-      },
-      {
-        id: '2',
-        name: 'Salwar Suits',
-        slug: 'salwar-suits',
-        description: 'Elegant salwar suits',
-        status: 'Active',
-        productsCount: 36,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        color: '#EC008C',
+    const fetchCategoryData = async () => {
+      setLoading(true);
+      
+      try {
+        // Fetch category by slug
+        const { data: categoryData, error: categoryError } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('slug', categorySlug)
+          .single();
+          
+        if (categoryError || !categoryData) {
+          console.error('Error fetching category:', categoryError);
+          setLoading(false);
+          return;
+        }
+        
+        // Transform the category data
+        const formattedCategory: Category = {
+          id: categoryData.id,
+          name: categoryData.name,
+          slug: categoryData.slug,
+          description: categoryData.description || '',
+          status: categoryData.status as Category['status'],
+          imageUrl: categoryData.image_url,
+          productsCount: categoryData.products_count || 0,
+          createdAt: categoryData.created_at,
+          updatedAt: categoryData.updated_at,
+          parentId: categoryData.parent_id,
+          color: categoryData.color || '#EC008C',
+        };
+        
+        setCategory(formattedCategory);
+        
+        // Fetch subcategories for the current category
+        const subcats = await getSubcategories(formattedCategory.id);
+        setSubcategories(subcats);
+      } catch (error) {
+        console.error('Error in category page:', error);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
     
-    const foundCategory = mockCategories.find(cat => cat.slug === formattedSlug);
-    setCategory(foundCategory || null);
-    
-    // Simulate fetching subcategories
-    const mockSubcategories: Category[] = [
-      {
-        id: '101',
-        name: 'Long Kurthi',
-        slug: 'long-kurthi',
-        description: 'Long Kurthi collection',
-        status: 'Active',
-        productsCount: 24,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        parentId: '1',
-        color: '#EC008C',
-      },
-      {
-        id: '102',
-        name: 'Short Kurthi',
-        slug: 'short-kurthi',
-        description: 'Short Kurthi collection',
-        status: 'Active',
-        productsCount: 18,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        parentId: '1',
-        color: '#EC008C',
-      },
-      {
-        id: '201',
-        name: 'Anarkali Suits',
-        slug: 'anarkali-suits',
-        description: 'Anarkali Suits collection',
-        status: 'Active',
-        productsCount: 15,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        parentId: '2',
-        color: '#EC008C',
-      }
-    ];
-    
-    // Filter subcategories by parent category
-    if (foundCategory) {
-      const relevantSubcategories = mockSubcategories.filter(
-        subcat => subcat.parentId === foundCategory.id
-      );
-      setSubcategories(relevantSubcategories);
+    if (categorySlug) {
+      fetchCategoryData();
     }
   }, [categorySlug]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-4">
+        <Skeleton className="h-6 w-72 mb-4" />
+        <Skeleton className="h-12 w-full mb-6" />
+        <Skeleton className="h-6 w-48 mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-48 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (!category) {
     return (
@@ -128,8 +114,16 @@ const CategoryPage: React.FC = () => {
               <Link key={subcat.id} to={`/store/categories/${category.slug}/${subcat.slug}`}>
                 <Card className="hover:shadow-lg transition-shadow duration-300">
                   <AspectRatio ratio={16/9}>
-                    <div className="w-full h-full bg-pink-100 flex items-center justify-center">
-                      <h3 className="text-xl font-medium text-[#EC008C]">{subcat.name}</h3>
+                    <div 
+                      className="w-full h-full flex items-center justify-center"
+                      style={{ backgroundColor: subcat.color ? `${subcat.color}15` : '#f9e0f0' }}
+                    >
+                      <h3 
+                        className="text-xl font-medium"
+                        style={{ color: subcat.color || '#EC008C' }}
+                      >
+                        {subcat.name}
+                      </h3>
                     </div>
                   </AspectRatio>
                   <CardContent className="p-4">
