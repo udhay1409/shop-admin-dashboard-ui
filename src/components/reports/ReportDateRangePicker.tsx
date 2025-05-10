@@ -17,8 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DateRange as DayPickerDateRange } from 'react-day-picker';
 
-interface DateRange {
+// Define our interface for DateRange that matches what our component expects
+export interface DateRange {
   from: Date | undefined;
   to: Date | undefined;
 }
@@ -102,10 +104,11 @@ const ReportDateRangePicker: React.FC<ReportDateRangePickerProps> = ({ value, on
           mode="range"
           defaultMonth={value?.from}
           selected={{ from: value?.from, to: value?.to }}
-          onSelect={(range) => {
-            // Make sure we never pass undefined values when a date is required
-            onChange(range || { from: undefined, to: undefined });
-            if (range?.from && range?.to) {
+          onSelect={(selectedRange: DayPickerDateRange | undefined) => {
+            // Convert the react-day-picker DateRange to our DateRange
+            const range: DateRange = selectedRange || { from: undefined, to: undefined };
+            onChange(range);
+            if (range.from && range.to) {
               setIsOpen(false);
             }
           }}
