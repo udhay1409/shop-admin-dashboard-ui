@@ -10,6 +10,7 @@ import ReportTypeSelector, { ReportType } from '@/components/reports/ReportTypeS
 import ReportDateRangePicker from '@/components/reports/ReportDateRangePicker';
 import { getRevenueData, getTopProducts } from '@/services/reportService';
 import { useToast } from '@/hooks/use-toast';
+import MetricCard from '@/components/MetricCard';
 
 const Reports: React.FC = () => {
   const [dateRange, setDateRange] = useState<{from: Date | undefined, to: Date | undefined}>({
