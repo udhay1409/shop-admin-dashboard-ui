@@ -92,6 +92,37 @@ export async function getTrendingProducts(limit: number = 8): Promise<Product[]>
   }));
 }
 
+// Helper function to convert JSON to StoreSettings
+function convertToStoreSettings(jsonData: any): StoreSettings | null {
+  if (!jsonData || typeof jsonData !== 'object' || Array.isArray(jsonData)) {
+    return null;
+  }
+
+  // Check if the object has the required properties of StoreSettings
+  if (
+    typeof jsonData.storeName === 'string' &&
+    typeof jsonData.storeUrl === 'string' &&
+    typeof jsonData.contactEmail === 'string' &&
+    typeof jsonData.contactPhone === 'string' &&
+    typeof jsonData.businessType === 'string' &&
+    typeof jsonData.storeOpen === 'boolean'
+  ) {
+    return {
+      storeName: jsonData.storeName,
+      storeUrl: jsonData.storeUrl,
+      description: jsonData.description || undefined,
+      contactEmail: jsonData.contactEmail,
+      contactPhone: jsonData.contactPhone,
+      businessType: jsonData.businessType,
+      storeOpen: jsonData.storeOpen
+    };
+  }
+
+  // If we get here, the JSON doesn't match our StoreSettings structure
+  console.warn('JSON data does not match StoreSettings structure:', jsonData);
+  return null;
+}
+
 // Get full store settings directly from the database
 export async function getStoreFrontSettings(): Promise<StoreSettings | null> {
   const { data: session } = await supabase.auth.getSession();
@@ -108,11 +139,8 @@ export async function getStoreFrontSettings(): Promise<StoreSettings | null> {
       return null;
     }
 
-    // Use proper type casting with safety check
-    if (data?.store_settings && typeof data.store_settings === 'object' && !Array.isArray(data.store_settings)) {
-      return data.store_settings as StoreSettings;
-    }
-    return null;
+    // Use the helper function to safely convert JSON to StoreSettings
+    return convertToStoreSettings(data?.store_settings);
   }
   
   // For authenticated users, get their settings
@@ -127,11 +155,8 @@ export async function getStoreFrontSettings(): Promise<StoreSettings | null> {
     return null;
   }
 
-  // Use proper type casting with safety check
-  if (data?.store_settings && typeof data.store_settings === 'object' && !Array.isArray(data.store_settings)) {
-    return data.store_settings as StoreSettings;
-  }
-  return null;
+  // Use the helper function to safely convert JSON to StoreSettings
+  return convertToStoreSettings(data?.store_settings);
 }
 
 // Get all product categories with counts
