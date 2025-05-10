@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Search, Filter, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -140,7 +139,7 @@ const Products: React.FC = () => {
   const handleSaveProduct = async (
     productData: Partial<Product>, 
     attributes?: Array<{ attributeId: string, values: string[] }>
-  ) => {
+  ): Promise<void> => {
     setIsSubmitting(true);
     
     try {
@@ -152,8 +151,6 @@ const Products: React.FC = () => {
         if (attributes && attributes.length > 0) {
           await setProductAttributes(selectedProduct.id, attributes);
         }
-        
-        return updatedProduct;
       } else {
         // Create new product
         const newProduct = await addProduct({
@@ -172,8 +169,6 @@ const Products: React.FC = () => {
         if (attributes && attributes.length > 0 && newProduct) {
           await setProductAttributes(newProduct.id, attributes);
         }
-        
-        return newProduct;
       }
     } catch (error) {
       console.error('Error saving product:', error);
