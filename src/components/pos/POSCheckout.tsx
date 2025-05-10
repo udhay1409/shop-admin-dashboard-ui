@@ -1,185 +1,202 @@
 
 import React, { useState } from 'react';
-import { 
+import { Button } from '@/components/ui/button';
+import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CartItem } from '@/hooks/usePOS';
+import { CreditCard, Check, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { 
-  CreditCard, 
-  Receipt, 
-  Banknote,
-  Smartphone,
-  CheckCircle,
-  ArrowRight
-} from 'lucide-react';
-import { Product } from '@/types/product';
-
-interface CartItem extends Product {
-  quantity: number;
-}
+import { Label } from '@/components/ui/label';
 
 interface POSCheckoutProps {
   isOpen: boolean;
   onClose: () => void;
   cartItems: CartItem[];
+  cartSubtotal: number;
+  taxAmount: number;
   cartTotal: number;
-  onComplete: (paymentMethod: string) => void;
+  onComplete: (paymentMethod: string, customerInfo?: any) => Promise<string | null>;
 }
 
-const PaymentTabContent: React.FC<{ 
-  children: React.ReactNode;
-  method: string;
-  cartTotal: number;
-  onComplete: (paymentMethod: string) => void;
-}> = ({ children, method, cartTotal, onComplete }) => {
-  const [isPaying, setIsPaying] = useState(false);
-  
-  const handlePayment = () => {
-    setIsPaying(true);
-    
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsPaying(false);
-      onComplete(method);
-    }, 1500);
-  };
-  
-  return (
-    <div className="space-y-6 pt-4">
-      <div className="space-y-4">
-        {children}
-      </div>
-      <div className="flex justify-between items-center">
-        <div>
-          <p className="text-sm text-muted-foreground">Total amount</p>
-          <p className="text-2xl font-bold">${(cartTotal * 1.05).toFixed(2)}</p>
-        </div>
-        <Button onClick={handlePayment} disabled={isPaying}>
-          {isPaying ? (
-            <>Processing...</>
-          ) : (
-            <>
-              Pay Now
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const POSCheckout: React.FC<POSCheckoutProps> = ({ 
-  isOpen, 
-  onClose, 
-  cartItems, 
+const POSCheckout: React.FC<POSCheckoutProps> = ({
+  isOpen,
+  onClose,
+  cartItems,
+  cartSubtotal,
+  taxAmount,
   cartTotal,
-  onComplete 
+  onComplete,
 }) => {
-  const formattedTotal = (cartTotal * 1.05).toFixed(2);
-  
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [processing, setProcessing] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+  });
+  const [collectCustomerInfo, setCollectCustomerInfo] = useState(false);
+
+  const formatPrice = (price: number) => `$${price.toFixed(2)}`;
+
+  const handlePayment = async () => {
+    setProcessing(true);
+    try {
+      await onComplete(
+        paymentMethod, 
+        collectCustomerInfo ? customerInfo : undefined
+      );
+      onClose();
+    } catch (error) {
+      console.error('Payment processing error:', error);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleCustomerInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCustomerInfo((prev) => ({ ...prev, [name]: value }));
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !processing && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Complete Payment</DialogTitle>
-          <DialogDescription>
-            Select a payment method to complete this transaction
-          </DialogDescription>
+          <DialogTitle>Complete Purchase</DialogTitle>
         </DialogHeader>
-        
-        <Tabs defaultValue="card" className="w-full">
-          <TabsList className="grid grid-cols-4 mb-2">
-            <TabsTrigger value="card">
-              <CreditCard className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Card</span>
-            </TabsTrigger>
-            <TabsTrigger value="cash">
-              <Banknote className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Cash</span>
-            </TabsTrigger>
-            <TabsTrigger value="upi">
-              <Smartphone className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">UPI</span>
-            </TabsTrigger>
-            <TabsTrigger value="other">
-              <Receipt className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Other</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="card">
-            <PaymentTabContent method="card" cartTotal={cartTotal} onComplete={onComplete}>
-              <div className="space-y-2">
-                <div>
-                  <label htmlFor="cardNumber" className="text-sm">Card Number</label>
-                  <Input id="cardNumber" placeholder="1234 5678 9012 3456" />
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Order Summary</p>
+            <div className="text-sm rounded-md border p-2 max-h-40 overflow-y-auto">
+              {cartItems.map((item) => (
+                <div key={item.product.id} className="flex justify-between py-1">
+                  <span>{item.quantity} x {item.product.name}</span>
+                  <span>{formatPrice(item.product.price * item.quantity)}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+              ))}
+            </div>
+            
+            <div className="space-y-1 text-sm pt-2">
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>{formatPrice(cartSubtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tax (5%):</span>
+                <span>{formatPrice(taxAmount)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-base">
+                <span>Total:</span>
+                <span>{formatPrice(cartTotal)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="checkbox"
+                id="collectCustomerInfo"
+                checked={collectCustomerInfo}
+                onChange={() => setCollectCustomerInfo(!collectCustomerInfo)}
+                className="rounded border-gray-300 h-4 w-4"
+              />
+              <label htmlFor="collectCustomerInfo" className="text-sm">
+                Collect Customer Information
+              </label>
+            </div>
+
+            {collectCustomerInfo && (
+              <div className="space-y-2 border p-3 rounded">
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="h-4 w-4" />
+                  <span className="text-sm font-medium">Customer Details</span>
+                </div>
+                <div className="grid gap-2">
                   <div>
-                    <label htmlFor="expiryDate" className="text-sm">Expiry Date</label>
-                    <Input id="expiryDate" placeholder="MM/YY" />
+                    <Label htmlFor="name" className="text-xs">Name</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      placeholder="Customer name"
+                      value={customerInfo.name}
+                      onChange={handleCustomerInfoChange}
+                    />
                   </div>
                   <div>
-                    <label htmlFor="cvv" className="text-sm">CVV</label>
-                    <Input id="cvv" placeholder="123" />
+                    <Label htmlFor="phone" className="text-xs">Phone</Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      placeholder="Phone number"
+                      value={customerInfo.phone}
+                      onChange={handleCustomerInfoChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-xs">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      placeholder="Email address"
+                      value={customerInfo.email}
+                      onChange={handleCustomerInfoChange}
+                    />
                   </div>
                 </div>
               </div>
-            </PaymentTabContent>
-          </TabsContent>
-          
-          <TabsContent value="cash">
-            <PaymentTabContent method="cash" cartTotal={cartTotal} onComplete={onComplete}>
-              <div className="space-y-2">
-                <div>
-                  <label htmlFor="amountPaid" className="text-sm">Amount Received</label>
-                  <Input id="amountPaid" type="number" defaultValue={formattedTotal} />
-                </div>
-                <div>
-                  <label htmlFor="changeAmount" className="text-sm">Change Due</label>
-                  <Input id="changeAmount" disabled value="0.00" />
-                </div>
+            )}
+          </div>
+
+          <Tabs defaultValue="cash" onValueChange={setPaymentMethod} value={paymentMethod}>
+            <TabsList className="grid grid-cols-3 w-full">
+              <TabsTrigger value="cash">Cash</TabsTrigger>
+              <TabsTrigger value="card">Card</TabsTrigger>
+              <TabsTrigger value="upi">UPI/QR</TabsTrigger>
+            </TabsList>
+            <TabsContent value="cash" className="py-2">
+              <div className="text-center space-y-2 py-2">
+                <CreditCard className="h-10 w-10 mx-auto opacity-50" />
+                <p className="text-sm">Cash payment selected</p>
               </div>
-            </PaymentTabContent>
-          </TabsContent>
-          
-          <TabsContent value="upi">
-            <PaymentTabContent method="upi" cartTotal={cartTotal} onComplete={onComplete}>
-              <div className="text-center">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 mb-4 inline-block">
-                  <div className="bg-gray-100 h-32 w-32 flex items-center justify-center">
-                    <p className="text-sm text-gray-500">QR Code</p>
-                  </div>
-                </div>
-                <p className="text-sm">Scan the QR code with any UPI app to pay</p>
+            </TabsContent>
+            <TabsContent value="card" className="py-2">
+              <div className="text-center space-y-2 py-2">
+                <CreditCard className="h-10 w-10 mx-auto opacity-50" />
+                <p className="text-sm">Card payment selected</p>
               </div>
-            </PaymentTabContent>
-          </TabsContent>
-          
-          <TabsContent value="other">
-            <PaymentTabContent method="other" cartTotal={cartTotal} onComplete={onComplete}>
-              <div className="space-y-2">
-                <div>
-                  <label htmlFor="paymentReference" className="text-sm">Payment Reference</label>
-                  <Input id="paymentReference" placeholder="Enter reference ID" />
-                </div>
-                <div>
-                  <label htmlFor="paymentMethod" className="text-sm">Payment Method</label>
-                  <Input id="paymentMethod" placeholder="e.g., Store Credit, Gift Card" />
-                </div>
+            </TabsContent>
+            <TabsContent value="upi" className="py-2">
+              <div className="text-center space-y-2 py-2">
+                <CreditCard className="h-10 w-10 mx-auto opacity-50" />
+                <p className="text-sm">UPI/QR payment selected</p>
               </div>
-            </PaymentTabContent>
-          </TabsContent>
-        </Tabs>
-        
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={processing}>
+            Cancel
+          </Button>
+          <Button onClick={handlePayment} disabled={processing}>
+            {processing ? (
+              "Processing..."
+            ) : (
+              <>
+                Complete <Check className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
