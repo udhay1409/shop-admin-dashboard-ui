@@ -117,10 +117,20 @@ export async function getUserSettings() {
         payment_settings: getDefaultPaymentSettings(),
       };
       
-      // Insert as a single object, not an array
+      // Insert as a single object with settings serialized as JSON
       const { error: insertError } = await supabase
         .from('profiles_settings')
-        .insert(defaultSettings);
+        .insert({
+          id: userId,
+          store_settings: defaultSettings.store_settings,
+          appearance_settings: defaultSettings.appearance_settings,
+          notification_settings: defaultSettings.notification_settings,
+          security_settings: defaultSettings.security_settings,
+          localization_settings: defaultSettings.localization_settings,
+          smtp_settings: defaultSettings.smtp_settings,
+          email_templates: defaultSettings.email_templates,
+          payment_settings: defaultSettings.payment_settings,
+        });
         
       if (insertError) {
         console.error('Error creating default settings:', insertError);

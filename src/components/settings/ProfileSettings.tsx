@@ -84,12 +84,13 @@ const ProfileSettings: React.FC = () => {
       
       if (!user) throw new Error("No authenticated user");
       
-      // Update profile
+      // Update profile - make sure to include the email field which is required
       const { error } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
           first_name: data.username,
+          email: data.email, // Include this required field
           updated_at: new Date().toISOString(),
         });
       
