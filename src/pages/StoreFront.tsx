@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -48,10 +48,17 @@ const StoreFront: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, userRole } = useAuth();
   
-  // Simple admin check (in a real app, use proper auth)
-  const isAdmin = true; // Replace with actual auth logic
+  // Redirect admin users to the admin dashboard
+  useEffect(() => {
+    if (user && userRole === 'admin' && location.pathname.startsWith('/store')) {
+      window.location.href = '/';
+    }
+  }, [user, userRole, location]);
+  
+  // Simple admin check
+  const isAdmin = userRole === 'admin';
   
   return (
     <div className="min-h-screen flex flex-col">

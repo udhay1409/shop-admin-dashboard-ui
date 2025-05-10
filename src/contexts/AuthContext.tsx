@@ -3,16 +3,19 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Customer } from '@/types/customer';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define the shape of our auth context
 interface AuthContextType {
   user: Customer | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  userRole: 'admin' | 'staff' | 'customer' | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (userData: Partial<Customer>) => void;
+  checkUserRole: () => Promise<string | null>;
 }
 
 // Create the auth context
@@ -52,17 +55,51 @@ interface AuthProviderProps {
 // Provider component that wraps the app and makes auth available to all children
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<Customer | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'staff' | 'customer' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Check the user's role from Supabase
+  const checkUserRole = async (): Promise<string | null> => {
+    try {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return null;
+      }
+
+      return data?.role || 'customer';
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      return null;
+    }
+  };
+
   // Check if user is already logged in (from localStorage)
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         try {
-          setUser(JSON.parse(storedUser));
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          
+          // Set up a session
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          // If session exists, fetch the user role
+          if (session) {
+            const role = await checkUserRole();
+            setUserRole(role as 'admin' | 'staff' | 'customer' | null);
+          }
         } catch (error) {
           console.error('Failed to parse stored user:', error);
           localStorage.removeItem('user');
@@ -77,18 +114,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // In a real app, you would make an API request to verify credentials
-      // For demo purposes, we'll use mock data
-      const foundUser = mockUsers.find(u => u.email === email);
+      // Attempt to sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      if (foundUser) {
-        // In a real app, you would verify the password hash here
-        // For demo, we'll assume the password is correct if the user exists
+      if (error) {
+        toast({
+          title: "Login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (data.user) {
+        // Fetch user profile from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+          
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+        }
         
-        // Update the last login date
-        const updatedUser = {
-          ...foundUser,
-          lastLoginDate: new Date().toISOString()
+        // Fetch user role
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .single();
+          
+        if (roleError && roleError.code !== 'PGRST116') { // PGRST116 is "row not found" error
+          console.error('Error fetching role:', roleError);
+        }
+        
+        // Get role (default to customer if none found)
+        const role = roleData?.role || 'customer';
+        setUserRole(role as 'admin' | 'staff' | 'customer');
+
+        // Create a merged user object with profile data and auth data
+        const updatedUser: Customer = {
+          id: data.user.id,
+          email: data.user.email || '',
+          name: profileData?.first_name && profileData?.last_name 
+            ? `${profileData.first_name} ${profileData.last_name}`
+            : data.user.email?.split('@')[0] || 'User',
+          status: 'Active',
+          joinedDate: data.user.created_at || new Date().toISOString(),
+          lastLoginDate: new Date().toISOString(),
+          phone: profileData?.phone || '',
+          totalOrders: 0,
+          totalSpent: 0,
+          emailSubscription: true
         };
         
         // Save the user to state and localStorage
@@ -100,14 +181,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           description: `Welcome back, ${updatedUser.name}!`,
         });
         
+        // Redirect based on role
+        if (role === 'admin') {
+          navigate('/');
+        } else {
+          navigate('/store');
+        }
+        
         return true;
       }
-      
-      toast({
-        title: "Login failed",
-        description: "Invalid email or password.",
-        variant: "destructive",
-      });
       
       return false;
     } catch (error) {
@@ -125,48 +207,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
       // In a real app, you would make an API request to create the user
-      // For demo purposes, we'll just simulate a successful registration
+      // We'll use Supabase Auth to create the user
       
-      // Check if user already exists
-      const existingUser = mockUsers.find(u => u.email === email);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: name.split(' ')[0],
+            last_name: name.split(' ').slice(1).join(' ')
+          }
+        }
+      });
       
-      if (existingUser) {
+      if (error) {
         toast({
           title: "Registration failed",
-          description: "A user with this email already exists.",
+          description: error.message,
           variant: "destructive",
         });
         return false;
       }
       
-      // In a real app, you would hash the password and store the user in a database
-      // For demo, we'll just create an in-memory user
-      const newUser: Customer = {
-        id: `${mockUsers.length + 1}`,
-        name,
-        email,
-        status: 'Active',
-        joinedDate: new Date().toISOString(),
-        lastLoginDate: new Date().toISOString(),
-        totalOrders: 0,
-        totalSpent: 0,
-        emailSubscription: true,
-      };
+      if (data.user) {
+        // In Supabase, the profile should be auto-created by our trigger
+        // Add default role for new user
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: data.user.id,
+            role: 'customer'
+          });
+          
+        if (roleError) {
+          console.error('Error setting user role:', roleError);
+        }
+        
+        toast({
+          title: "Registration successful",
+          description: "Your account has been created. Please verify your email if required.",
+        });
+        
+        return true;
+      }
       
-      // In a real app, the user would not be automatically logged in after registration
-      // They would need to verify their email first
-      // For demo purposes, we'll "verify" the email automatically
-      
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created.",
-      });
-      
-      // Note: In a real app, we would wait for email verification before setting the user
-      // For demo purposes, we'll set the user right away
-      mockUsers.push(newUser);
-      
-      return true;
+      return false;
     } catch (error) {
       console.error('Registration error:', error);
       toast({
@@ -179,27 +264,65 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Logout function
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully.",
-    });
-    navigate('/store');
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setUserRole(null);
+      localStorage.removeItem('user');
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully.",
+      });
+      navigate('/store');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   // Update user profile
-  const updateProfile = (userData: Partial<Customer>) => {
+  const updateProfile = async (userData: Partial<Customer>) => {
     if (user) {
-      const updatedUser = { ...user, ...userData };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
-      });
+      try {
+        const updatedUser = { ...user, ...userData };
+        
+        // Update the profile in Supabase
+        if (user.id) {
+          const { error } = await supabase
+            .from('profiles')
+            .update({
+              first_name: updatedUser.name.split(' ')[0],
+              last_name: updatedUser.name.split(' ').slice(1).join(' '),
+              phone: updatedUser.phone
+            })
+            .eq('id', user.id);
+            
+          if (error) {
+            console.error('Error updating profile:', error);
+            toast({
+              title: "Profile update failed",
+              description: error.message,
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+        
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been updated successfully.",
+        });
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        toast({
+          title: "Profile update failed",
+          description: "An error occurred while updating your profile.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -207,10 +330,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isAuthenticated: !!user,
     isLoading,
+    userRole,
     login,
     register,
     logout,
     updateProfile,
+    checkUserRole
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -37,7 +37,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { login, userRole } = useAuth();
   
   // Check if we have a redirect path
   const from = location.state?.from?.pathname || '/store';
@@ -54,10 +54,9 @@ const Login = () => {
     try {
       const success = await login(values.email, values.password);
       
-      if (success) {
-        // Redirect to the previous page or store homepage
-        navigate(from, { replace: true });
-      }
+      // Note: The redirection happens in the login function in AuthContext
+      // based on the user role to avoid race conditions with role fetching
+      
     } catch (error) {
       console.error('Login error:', error);
       toast({
