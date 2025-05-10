@@ -117,6 +117,7 @@ const AdminSidebar = () => {
           <SidebarItem to="/orders" icon={ShoppingCart} text="Orders" badge={10} />
           <SidebarItem to="/products" icon={Package} text="Products" />
           <SidebarItem to="/categories" icon={Folder} text="Categories" />
+          <SidebarItem to="/pos" icon={CreditCard} text="POS" />
           <SidebarItem to="/delivery" icon={Truck} text="Delivery" badge={5} />
           <SidebarItem to="/inventory" icon={Boxes} text="Inventory" />
           <SidebarItem to="/vendors" icon={Store} text="Vendors" />

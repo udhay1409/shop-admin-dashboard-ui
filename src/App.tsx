@@ -22,6 +22,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import TransactionLogs from "./pages/TransactionLogs";
+import POS from "./pages/POS";
+import StoreFront from "./pages/StoreFront";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +49,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <Routes>
+          {/* Store Frontend */}
+          <Route path="/store" element={<StoreFront />} />
+
           {/* Authentication routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -71,6 +76,7 @@ const App = () => (
             <Route path="reviews" element={<Reviews />} />
             <Route path="settings" element={<Settings />} />
             <Route path="transaction-logs" element={<TransactionLogs />} />
+            <Route path="pos" element={<POS />} />
             <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
             {/* Other routes will be added as they're needed */}
             <Route path="*" element={<NotFound />} />
