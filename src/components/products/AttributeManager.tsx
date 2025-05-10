@@ -109,8 +109,16 @@ export function AttributeManager({ productId, onAttributesChange, initialAttribu
   };
 
   const getAvailableAttributes = () => {
-    return attributes.filter(attr => !selectedAttributes.has(attr.id));
+    // Ensure we're working with an array, even if attributes is undefined
+    const safeAttributes = Array.isArray(attributes) ? attributes : [];
+    return safeAttributes.filter(attr => !selectedAttributes.has(attr.id));
   };
+
+  // Generate combobox items safely
+  const comboboxItems = getAvailableAttributes().map(attr => ({ 
+    value: attr.id, 
+    label: attr.displayName 
+  }));
 
   return (
     <div className="space-y-6">
@@ -120,7 +128,7 @@ export function AttributeManager({ productId, onAttributesChange, initialAttribu
         {/* Selected attributes */}
         <div className="space-y-4">
           {Array.from(selectedAttributes.entries()).map(([attributeId, values]) => {
-            const attribute = attributes.find(a => a.id === attributeId);
+            const attribute = Array.isArray(attributes) ? attributes.find(a => a.id === attributeId) : undefined;
             return attribute ? (
               <div key={attributeId} className="border rounded-md p-3">
                 <div className="flex justify-between items-center mb-2">
@@ -194,14 +202,11 @@ export function AttributeManager({ productId, onAttributesChange, initialAttribu
           <Label>Add Existing Attribute</Label>
           <div className="flex gap-2 mt-1">
             <Combobox
-              items={getAvailableAttributes().map(attr => ({ 
-                value: attr.id, 
-                label: attr.displayName 
-              }))}
+              items={comboboxItems}
               className="flex-1"
               placeholder="Select attribute..."
               onValueChange={(value) => value && handleAddAttribute(value)}
-              disabled={loading || getAvailableAttributes().length === 0}
+              disabled={loading || comboboxItems.length === 0}
             />
           </div>
         </div>

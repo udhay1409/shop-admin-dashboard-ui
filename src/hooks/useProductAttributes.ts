@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ProductAttribute, ProductAttributeWithValues } from '@/types/attribute';
 import * as attributeService from '@/services/attributeService';
@@ -9,31 +9,46 @@ export function useProductAttributes() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchAttributes();
-  }, []);
-
-  const fetchAttributes = async () => {
+  // Fetch all attributes
+  const fetchAttributes = useCallback(async () => {
     setLoading(true);
     try {
-      const fetchedAttributes = await attributeService.getAttributes();
-      setAttributes(fetchedAttributes);
+      const data = await attributeService.getAttributes();
+      setAttributes(data || []);
     } catch (error) {
       console.error('Error fetching attributes:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load attributes',
+        variant: 'destructive',
+      });
+      setAttributes([]); // Set to empty array on error, not undefined
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  // Get attributes for a specific product
+  const getProductAttributes = useCallback(async (productId: string): Promise<ProductAttributeWithValues[]> => {
+    try {
+      const data = await attributeService.getProductAttributes(productId);
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching product attributes:', error);
       toast({
         title: 'Error',
         description: 'Failed to load product attributes',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
+      return [];
     }
-  };
+  }, [toast]);
 
-  const createAttribute = async (attribute: Pick<ProductAttribute, 'name' | 'displayName'>) => {
+  // Create a new attribute
+  const createAttribute = useCallback(async (attribute: {name: string, displayName: string}): Promise<ProductAttribute> => {
     try {
       const newAttribute = await attributeService.createAttribute(attribute);
-      setAttributes(prev => [...prev, newAttribute]);
+      setAttributes(prev => [...(prev || []), newAttribute]);
       toast({
         title: 'Success',
         description: 'Attribute created successfully',
@@ -48,75 +63,20 @@ export function useProductAttributes() {
       });
       throw error;
     }
-  };
+  }, [toast]);
 
-  const updateAttribute = async (id: string, updates: Partial<Pick<ProductAttribute, 'name' | 'displayName'>>) => {
-    try {
-      const updatedAttribute = await attributeService.updateAttribute(id, updates);
-      setAttributes(prev => prev.map(attr => attr.id === id ? updatedAttribute : attr));
-      toast({
-        title: 'Success',
-        description: 'Attribute updated successfully',
-      });
-      return updatedAttribute;
-    } catch (error) {
-      console.error('Error updating attribute:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update attribute',
-        variant: 'destructive',
-      });
-      throw error;
-    }
-  };
-
-  const deleteAttribute = async (id: string) => {
-    try {
-      await attributeService.deleteAttribute(id);
-      setAttributes(prev => prev.filter(attr => attr.id !== id));
-      toast({
-        title: 'Success',
-        description: 'Attribute deleted successfully',
-      });
-      return true;
-    } catch (error) {
-      console.error('Error deleting attribute:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete attribute',
-        variant: 'destructive',
-      });
-      return false;
-    }
-  };
-
-  const getProductAttributes = async (productId: string): Promise<ProductAttributeWithValues[]> => {
-    try {
-      return await attributeService.getProductAttributes(productId);
-    } catch (error) {
-      console.error('Error fetching product attributes:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load product attributes',
-        variant: 'destructive',
-      });
-      return [];
-    }
-  };
-
-  const setProductAttributes = async (
+  // Set attributes for a product
+  const setProductAttributes = useCallback(async (
     productId: string, 
-    attributes: Array<{ attributeId: string, values: string[] }>
+    attributeData: Array<{ attributeId: string, values: string[] }>
   ): Promise<boolean> => {
     try {
-      const result = await attributeService.setProductAttributes(productId, attributes);
-      if (result) {
-        toast({
-          title: 'Success',
-          description: 'Product attributes updated successfully',
-        });
-      }
-      return result;
+      await attributeService.setProductAttributes(productId, attributeData);
+      toast({
+        title: 'Success',
+        description: 'Product attributes updated successfully',
+      });
+      return true;
     } catch (error) {
       console.error('Error setting product attributes:', error);
       toast({
@@ -126,16 +86,19 @@ export function useProductAttributes() {
       });
       return false;
     }
-  };
+  }, [toast]);
+
+  // Load attributes on component mount
+  useEffect(() => {
+    fetchAttributes();
+  }, [fetchAttributes]);
 
   return {
-    attributes,
+    attributes: attributes || [], // Always return an array, even if attributes is undefined
     loading,
-    refreshAttributes: fetchAttributes,
-    createAttribute,
-    updateAttribute,
-    deleteAttribute,
+    fetchAttributes,
     getProductAttributes,
-    setProductAttributes,
+    createAttribute,
+    setProductAttributes
   };
 }
