@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlusCircle, Search, Filter, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,68 +21,12 @@ import { Badge } from '@/components/ui/badge';
 import ProductDialog from '@/components/products/ProductDialog';
 import DeleteProductDialog from '@/components/products/DeleteProductDialog';
 import { Product } from '@/types/product';
-
-// Mock data for products
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: 'Wireless Headphones',
-    price: 129.99,
-    stock: 45,
-    status: 'Active',
-    category: 'Electronics',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop',
-    createdAt: new Date(2023, 4, 15).toISOString(),
-    updatedAt: new Date(2023, 6, 10).toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Smart Watch Series 5',
-    price: 249.99,
-    stock: 28,
-    status: 'Active',
-    category: 'Electronics',
-    image: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=300&h=300&fit=crop',
-    createdAt: new Date(2023, 3, 10).toISOString(),
-    updatedAt: new Date(2023, 5, 20).toISOString(),
-  },
-  {
-    id: '3',
-    name: 'Cotton T-Shirt',
-    price: 24.99,
-    stock: 120,
-    status: 'Active',
-    category: 'Clothing',
-    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop',
-    createdAt: new Date(2023, 2, 25).toISOString(),
-    updatedAt: new Date(2023, 4, 5).toISOString(),
-  },
-  {
-    id: '4',
-    name: 'Stainless Steel Water Bottle',
-    price: 19.99,
-    stock: 75,
-    status: 'Draft',
-    category: 'Home & Kitchen',
-    image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=300&h=300&fit=crop',
-    createdAt: new Date(2023, 1, 8).toISOString(),
-    updatedAt: new Date(2023, 3, 12).toISOString(),
-  },
-  {
-    id: '5',
-    name: 'Face Moisturizer',
-    price: 34.99,
-    stock: 60,
-    status: 'Inactive',
-    category: 'Beauty',
-    image: 'https://images.unsplash.com/photo-1617897903246-719242758050?w=300&h=300&fit=crop',
-    createdAt: new Date(2023, 0, 15).toISOString(),
-    updatedAt: new Date(2023, 2, 10).toISOString(),
-  }
-];
+import useProductInventory from '@/hooks/useProductInventory';
+import { useToast } from '@/hooks/use-toast';
 
 const Products: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const { products, addProduct, updateProduct, deleteProduct } = useProductInventory();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -134,35 +78,42 @@ const Products: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
       if (selectedProduct) {
         // Update existing product
-        const updatedProducts = products.map(p => 
-          p.id === selectedProduct.id ? { ...p, ...productData, updatedAt: new Date().toISOString() } : p
-        );
-        setProducts(updatedProducts);
+        const updatedProduct = updateProduct(selectedProduct.id, productData);
+        if (updatedProduct) {
+          toast({
+            title: "Product updated",
+            description: `${updatedProduct.name} has been updated successfully.`
+          });
+        }
       } else {
         // Create new product
-        const newProduct: Product = {
-          id: Math.random().toString(36).substring(2, 9),
+        const newProduct = addProduct({
           name: productData.name || 'Untitled Product',
           price: productData.price || 0,
           stock: productData.stock || 0,
           status: productData.status || 'Draft',
           category: productData.category || 'Uncategorized',
-          image: productData.image || '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
+          image: productData.image,
+          description: productData.description,
+          sku: productData.sku,
+        });
         
-        setProducts([...products, newProduct]);
+        toast({
+          title: "Product created",
+          description: `${newProduct.name} has been created successfully.`
+        });
       }
       
       setIsProductDialogOpen(false);
     } catch (error) {
       console.error('Error saving product:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save product. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -175,14 +126,23 @@ const Products: React.FC = () => {
     setIsDeleting(true);
     
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const updatedProducts = products.filter(p => p.id !== selectedProduct.id);
-      setProducts(updatedProducts);
-      setIsDeleteDialogOpen(false);
+      const deleted = deleteProduct(selectedProduct.id);
+      if (deleted) {
+        toast({
+          title: "Product deleted",
+          description: `${selectedProduct.name} has been deleted successfully.`
+        });
+        setIsDeleteDialogOpen(false);
+      } else {
+        throw new Error("Failed to delete product");
+      }
     } catch (error) {
       console.error('Error deleting product:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete product. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -215,7 +175,7 @@ const Products: React.FC = () => {
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-categories">All Categories</SelectItem>
+              <SelectItem value="">All Categories</SelectItem>
               {categories.map(category => (
                 <SelectItem key={category} value={category}>{category}</SelectItem>
               ))}
@@ -227,7 +187,7 @@ const Products: React.FC = () => {
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-status">All Status</SelectItem>
+              <SelectItem value="">All Status</SelectItem>
               <SelectItem value="Active">Active</SelectItem>
               <SelectItem value="Draft">Draft</SelectItem>
               <SelectItem value="Inactive">Inactive</SelectItem>
