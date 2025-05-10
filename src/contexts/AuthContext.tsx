@@ -31,24 +31,6 @@ export const useAuth = () => {
   return context;
 };
 
-// Mock user data (in a real app, this would come from the backend)
-const mockUsers: Customer[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    phone: '+91 98765 43210',
-    status: 'Active',
-    joinedDate: '2023-01-15',
-    lastLoginDate: '2024-05-09',
-    totalOrders: 5,
-    totalSpent: 12500,
-    address: '123 Main St, Mumbai, India - 400001',
-    notes: 'Prefers evening delivery',
-    emailSubscription: true
-  }
-];
-
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -87,25 +69,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check if user is already logged in (from localStorage)
   useEffect(() => {
     const checkAuth = async () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
+      // Get session from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
         try {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
-          
-          // Set up a session
-          const { data: { session } } = await supabase.auth.getSession();
-          
-          // If session exists, fetch the user role
-          if (session) {
-            const role = await checkUserRole();
-            setUserRole(role as 'admin' | 'staff' | 'customer' | null);
+          // Fetch profile data
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
           }
+          
+          // Fetch user role
+          const { data: roleData, error: roleError } = await supabase
+            .from('user_roles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+            
+          if (roleError && roleError.code !== 'PGRST116') { // PGRST116 is "row not found" error
+            console.error('Error fetching role:', roleError);
+          }
+          
+          // Get role (default to customer if none found)
+          const role = roleData?.role || 'customer';
+          setUserRole(role as 'admin' | 'staff' | 'customer');
+
+          // Create a merged user object with profile data and auth data
+          const userData: Customer = {
+            id: session.user.id,
+            email: session.user.email || '',
+            name: profileData ? 
+              `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
+              session.user.email?.split('@')[0] || 'User',
+            status: 'Active',
+            joinedDate: session.user.created_at || new Date().toISOString(),
+            lastLoginDate: new Date().toISOString(),
+            phone: profileData?.phone || '',
+            totalOrders: 0,
+            totalSpent: 0,
+            emailSubscription: true
+          };
+          
+          setUser(userData);
         } catch (error) {
-          console.error('Failed to parse stored user:', error);
+          console.error('Error during authentication check:', error);
           localStorage.removeItem('user');
         }
       }
+      
       setIsLoading(false);
     };
 
@@ -207,8 +224,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Register function
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      // In a real app, you would make an API request to create the user
-      // We'll use Supabase Auth to create the user
+      // Create a new user in Supabase Auth
       const firstName = name.split(' ')[0];
       const lastName = name.split(' ').slice(1).join(' ');
       
@@ -251,6 +267,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           description: "Your account has been created. Please verify your email if required.",
         });
         
+        // Don't auto-login the user - they need to verify email first if required
         return true;
       }
       
