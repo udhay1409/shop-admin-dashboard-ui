@@ -34,6 +34,7 @@ export const VendorList = () => {
       try {
         const data = await getVendors();
         setVendors(data);
+        console.log('Vendors from API:', data); // For debugging
       } catch (error: any) {
         console.error('Error fetching vendors:', error);
         toast({

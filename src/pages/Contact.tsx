@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,9 +8,37 @@ import { User, Store, Search, UserPlus, RefreshCcw, Upload, Download } from 'luc
 import { Input } from '@/components/ui/input';
 import { CustomerList } from '@/components/contacts/CustomerList';
 import { VendorList } from '@/components/contacts/VendorList';
+import { getVendors } from '@/services/vendorService';
+import { getCustomers } from '@/services/customerService';
+import { useToast } from '@/hooks/use-toast';
 
 const Contact = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    
+    try {
+      // This will trigger the useEffect hooks in both list components
+      // to refetch their data
+      await Promise.all([getVendors(), getCustomers()]);
+      toast({
+        title: "Data refreshed",
+        description: "Contact lists have been refreshed",
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh failed",
+        description: "Unable to refresh contact data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -54,12 +82,22 @@ const Contact = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search contacts..." className="pl-8" />
+              <Input 
+                placeholder="Search contacts..." 
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <RefreshCcw size={16} className="mr-1" />
-                Refresh
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCcw size={16} className={`mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
               </Button>
               <Button variant="outline" size="sm">
                 <Download size={16} className="mr-1" />

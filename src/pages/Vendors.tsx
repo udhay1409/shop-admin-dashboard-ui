@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlusCircle, Search, FileText, MoreHorizontal, Download, Trash, Filter, ListFilter, ArrowLeftRight, FileBarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -30,114 +32,7 @@ import VendorForm from '@/components/vendors/VendorForm';
 import PurchaseBillForm from '@/components/vendors/PurchaseBillForm';
 import VendorDetails from '@/components/vendors/VendorDetails';
 import { Badge } from '@/components/ui/badge';
-
-// Mock data for vendors
-const mockVendors = [
-  { 
-    id: '1', 
-    name: 'Fashion Wholesaler Inc.', 
-    contact: 'John Smith', 
-    email: 'john@fashionwholesaler.com', 
-    phone: '(555) 123-4567',
-    address: '123 Supplier St, New York, NY 10001',
-    status: 'Active',
-    totalPurchases: '$24,500.00'
-  },
-  { 
-    id: '2', 
-    name: 'Textile Materials Ltd', 
-    contact: 'Emma Johnson', 
-    email: 'emma@textilematerials.com', 
-    phone: '(555) 234-5678',
-    address: '456 Fabric Ave, Los Angeles, CA 90012',
-    status: 'Active',
-    totalPurchases: '$18,750.00'
-  },
-  { 
-    id: '3', 
-    name: 'Accessory Suppliers Co', 
-    contact: 'Michael Brown', 
-    email: 'michael@accessorysuppliers.com', 
-    phone: '(555) 345-6789',
-    address: '789 Button Blvd, Chicago, IL 60601',
-    status: 'Inactive',
-    totalPurchases: '$9,320.00'
-  },
-  { 
-    id: '4', 
-    name: 'Global Fashion Imports', 
-    contact: 'Sarah Davis', 
-    email: 'sarah@globalfashion.com', 
-    phone: '(555) 456-7890',
-    address: '101 Import Road, Miami, FL 33101',
-    status: 'Active',
-    totalPurchases: '$31,280.00'
-  },
-];
-
-// Mock data for purchase bills with expanded information
-const mockPurchaseBills = [
-  { 
-    id: 'PB001', 
-    vendorId: '1', 
-    vendorName: 'Fashion Wholesaler Inc.', 
-    billDate: '2025-04-28', 
-    amount: '$5,250.00',
-    status: 'Paid',
-    paymentDate: '2025-05-02',
-    paymentMethod: 'Bank Transfer',
-    invoiceNumber: 'INV-2025-001',
-    deliveryDate: '2025-05-05',
-    items: [
-      { name: 'Summer Dresses', quantity: 50, price: '$45.00', total: '$2,250.00' },
-      { name: 'Designer Jeans', quantity: 30, price: '$100.00', total: '$3,000.00' }
-    ]
-  },
-  { 
-    id: 'PB002', 
-    vendorId: '2', 
-    vendorName: 'Textile Materials Ltd', 
-    billDate: '2025-04-20', 
-    amount: '$3,750.00',
-    status: 'Pending',
-    paymentMethod: 'Credit Card',
-    invoiceNumber: 'INV-2025-002',
-    items: [
-      { name: 'Cotton Fabric', quantity: 500, price: '$5.00', total: '$2,500.00' },
-      { name: 'Silk Material', quantity: 50, price: '$25.00', total: '$1,250.00' }
-    ]
-  },
-  { 
-    id: 'PB003', 
-    vendorId: '4', 
-    vendorName: 'Global Fashion Imports', 
-    billDate: '2025-05-01', 
-    amount: '$8,400.00',
-    status: 'Paid',
-    paymentDate: '2025-05-05',
-    paymentMethod: 'Wire Transfer',
-    invoiceNumber: 'INV-2025-003',
-    deliveryDate: '2025-05-10',
-    items: [
-      { name: 'Designer Handbags', quantity: 20, price: '$320.00', total: '$6,400.00' },
-      { name: 'Fashion Belts', quantity: 100, price: '$20.00', total: '$2,000.00' }
-    ]
-  },
-  { 
-    id: 'PB004', 
-    vendorId: '1', 
-    vendorName: 'Fashion Wholesaler Inc.', 
-    billDate: '2025-05-15', 
-    amount: '$7,800.00',
-    status: 'Pending',
-    paymentMethod: 'Check',
-    invoiceNumber: 'INV-2025-004',
-    items: [
-      { name: 'Winter Jackets', quantity: 30, price: '$150.00', total: '$4,500.00' },
-      { name: 'Cashmere Sweaters', quantity: 20, price: '$165.00', total: '$3,300.00' }
-    ]
-  },
-];
+import { Vendor, getVendors, deleteVendor } from '@/services/vendorService';
 
 const Vendors = () => {
   const { toast } = useToast();
@@ -145,15 +40,102 @@ const Vendors = () => {
   const [isVendorDialogOpen, setIsVendorDialogOpen] = useState(false);
   const [isPurchaseBillDialogOpen, setIsPurchaseBillDialogOpen] = useState(false);
   const [isVendorDetailsOpen, setIsVendorDetailsOpen] = useState(false);
-  const [selectedVendor, setSelectedVendor] = useState(null);
-  const [selectedBill, setSelectedBill] = useState(null);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [selectedBill, setSelectedBill] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState('vendors');
   const [selectedVendorFilter, setSelectedVendorFilter] = useState('all');
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Fetch vendors from Supabase
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const data = await getVendors();
+        setVendors(data);
+      } catch (error) {
+        console.error('Error fetching vendors:', error);
+        toast({
+          title: 'Error fetching vendors',
+          description: 'Could not load vendors from the database.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const filteredVendors = mockVendors.filter(vendor => 
+    fetchVendors();
+  }, [toast]);
+
+  // For now, we'll keep using mock data for purchase bills until those APIs are implemented
+  const mockPurchaseBills = [
+    { 
+      id: 'PB001', 
+      vendorId: '1', 
+      vendorName: 'Fashion Wholesaler Inc.', 
+      billDate: '2025-04-28', 
+      amount: '$5,250.00',
+      status: 'Paid',
+      paymentDate: '2025-05-02',
+      paymentMethod: 'Bank Transfer',
+      invoiceNumber: 'INV-2025-001',
+      deliveryDate: '2025-05-05',
+      items: [
+        { name: 'Summer Dresses', quantity: 50, price: '$45.00', total: '$2,250.00' },
+        { name: 'Designer Jeans', quantity: 30, price: '$100.00', total: '$3,000.00' }
+      ]
+    },
+    { 
+      id: 'PB002', 
+      vendorId: '2', 
+      vendorName: 'Textile Materials Ltd', 
+      billDate: '2025-04-20', 
+      amount: '$3,750.00',
+      status: 'Pending',
+      paymentMethod: 'Credit Card',
+      invoiceNumber: 'INV-2025-002',
+      items: [
+        { name: 'Cotton Fabric', quantity: 500, price: '$5.00', total: '$2,500.00' },
+        { name: 'Silk Material', quantity: 50, price: '$25.00', total: '$1,250.00' }
+      ]
+    },
+    { 
+      id: 'PB003', 
+      vendorId: '4', 
+      vendorName: 'Global Fashion Imports', 
+      billDate: '2025-05-01', 
+      amount: '$8,400.00',
+      status: 'Paid',
+      paymentDate: '2025-05-05',
+      paymentMethod: 'Wire Transfer',
+      invoiceNumber: 'INV-2025-003',
+      deliveryDate: '2025-05-10',
+      items: [
+        { name: 'Designer Handbags', quantity: 20, price: '$320.00', total: '$6,400.00' },
+        { name: 'Fashion Belts', quantity: 100, price: '$20.00', total: '$2,000.00' }
+      ]
+    },
+    { 
+      id: 'PB004', 
+      vendorId: '1', 
+      vendorName: 'Fashion Wholesaler Inc.', 
+      billDate: '2025-05-15', 
+      amount: '$7,800.00',
+      status: 'Pending',
+      paymentMethod: 'Check',
+      invoiceNumber: 'INV-2025-004',
+      items: [
+        { name: 'Winter Jackets', quantity: 30, price: '$150.00', total: '$4,500.00' },
+        { name: 'Cashmere Sweaters', quantity: 20, price: '$165.00', total: '$3,300.00' }
+      ]
+    },
+  ];
+
+  const filteredVendors = vendors.filter(vendor => 
     vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (vendor.contact_name && vendor.contact_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (vendor.email && vendor.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const filteredBills = mockPurchaseBills.filter(bill => {
@@ -171,25 +153,25 @@ const Vendors = () => {
     return matchesSearch;
   });
 
-  const handleOpenVendorDetails = (vendor) => {
+  const handleOpenVendorDetails = (vendor: Vendor) => {
     setSelectedVendor(vendor);
     setIsVendorDetailsOpen(true);
   };
 
-  const handleViewVendorBills = (vendorId) => {
+  const handleViewVendorBills = (vendorId: string) => {
     setActiveTab('bills');
     setSelectedVendorFilter(vendorId);
   };
 
-  const handleDeleteVendor = (vendorId) => {
-    // In a real app, you'd delete the vendor from your database
-    toast({
-      title: "Vendor deleted",
-      description: `Vendor ID: ${vendorId} has been deleted.`,
-    });
+  const handleDeleteVendor = async (vendorId: string) => {
+    const success = await deleteVendor(vendorId);
+    if (success) {
+      // Remove the deleted vendor from the state
+      setVendors(vendors.filter(vendor => vendor.id !== vendorId));
+    }
   };
 
-  const handleDeleteBill = (billId) => {
+  const handleDeleteBill = (billId: string) => {
     // In a real app, you'd delete the bill from your database
     toast({
       title: "Purchase Bill deleted",
@@ -197,9 +179,17 @@ const Vendors = () => {
     });
   };
 
-  const handleViewBillDetails = (bill) => {
+  const handleViewBillDetails = (bill: any) => {
     setSelectedBill(bill);
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#EC008C] border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -243,63 +233,67 @@ const Vendors = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Total Purchases</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredVendors.map((vendor) => (
-                    <TableRow key={vendor.id}>
-                      <TableCell className="font-medium">{vendor.name}</TableCell>
-                      <TableCell>{vendor.contact}</TableCell>
-                      <TableCell>{vendor.email}</TableCell>
-                      <TableCell>{vendor.phone}</TableCell>
-                      <TableCell>
-                        <Badge variant={vendor.status === 'Active' ? 'default' : 'secondary'}>
-                          {vendor.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{vendor.totalPurchases}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleViewVendorBills(vendor.id)}
-                          >
-                            <FileBarChart className="h-4 w-4 mr-1" />
-                            Bills
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleOpenVendorDetails(vendor)}>
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDeleteVendor(vendor.id)}>
-                                <Trash className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
+              {filteredVendors.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <p className="text-muted-foreground">No vendors found. Add your first vendor to get started.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredVendors.map((vendor) => (
+                      <TableRow key={vendor.id}>
+                        <TableCell className="font-medium">{vendor.name}</TableCell>
+                        <TableCell>{vendor.contact_name || 'N/A'}</TableCell>
+                        <TableCell>{vendor.email || 'N/A'}</TableCell>
+                        <TableCell>{vendor.phone || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge variant={vendor.status === 'Active' ? 'default' : 'secondary'}>
+                            {vendor.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleViewVendorBills(vendor.id)}
+                            >
+                              <FileBarChart className="h-4 w-4 mr-1" />
+                              Bills
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenVendorDetails(vendor)}>
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDeleteVendor(vendor.id)}>
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -313,7 +307,7 @@ const Vendors = () => {
                   {selectedVendorFilter !== 'all' && (
                     <div className="flex items-center">
                       <Badge className="mr-2">
-                        For: {mockVendors.find(v => v.id === selectedVendorFilter)?.name}
+                        For: {vendors.find(v => v.id === selectedVendorFilter)?.name || 'Unknown'}
                       </Badge>
                       <Button 
                         variant="ghost" 
@@ -348,7 +342,7 @@ const Vendors = () => {
                       <DropdownMenuItem onClick={() => setSelectedVendorFilter('all')}>
                         All Vendors
                       </DropdownMenuItem>
-                      {mockVendors.map(vendor => (
+                      {vendors.map(vendor => (
                         <DropdownMenuItem 
                           key={vendor.id} 
                           onClick={() => setSelectedVendorFilter(vendor.id)}
@@ -362,6 +356,7 @@ const Vendors = () => {
               </div>
             </CardHeader>
             <CardContent>
+              {/* We're still using mock data for purchase bills */}
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -431,6 +426,8 @@ const Vendors = () => {
           <VendorForm 
             onSuccess={() => {
               setIsVendorDialogOpen(false);
+              // Refresh vendors list after adding a new vendor
+              getVendors().then(data => setVendors(data));
               toast({
                 title: "Vendor added",
                 description: "New vendor has been added successfully."
@@ -450,7 +447,7 @@ const Vendors = () => {
             </DialogDescription>
           </DialogHeader>
           <PurchaseBillForm 
-            vendors={mockVendors}
+            vendors={vendors}
             onSuccess={() => {
               setIsPurchaseBillDialogOpen(false);
               toast({
@@ -545,7 +542,7 @@ const Vendors = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedBill.items.map((item, index) => (
+                    {selectedBill.items.map((item: any, index: number) => (
                       <TableRow key={index}>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
