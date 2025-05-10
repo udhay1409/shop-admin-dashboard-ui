@@ -16,7 +16,7 @@ interface ProductDialogProps {
   isOpen: boolean;
   onClose: () => void;
   product?: Product;
-  onSubmit: (values: Partial<Product>, attributes?: Array<{ attributeId: string, values: string[] }>) => Promise<void | Product>;
+  onSubmit: (values: Partial<Product>, attributes?: Array<{ attributeId: string, values: string[] }>) => Promise<void>;
   isSubmitting: boolean;
   categories: string[];
 }
