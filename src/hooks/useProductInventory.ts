@@ -17,6 +17,7 @@ export default function useProductInventory() {
     try {
       const fetchedProducts = await productService.getProducts();
       setProducts(fetchedProducts);
+      return fetchedProducts;
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({
@@ -24,6 +25,7 @@ export default function useProductInventory() {
         description: 'Failed to load products. Please try again later.',
         variant: 'destructive',
       });
+      return [];
     } finally {
       setLoading(false);
     }
@@ -43,7 +45,7 @@ export default function useProductInventory() {
     };
     
     fetchLocations();
-  }, [toast]);
+  }, []);
 
   const getProductById = async (id: string): Promise<Product | null> => {
     try {
@@ -123,7 +125,7 @@ export default function useProductInventory() {
     }
   };
   
-  // Add these missing methods that are used in Inventory.tsx
+  // Inventory management methods
   const getAllInventory = (): Array<ProductInventoryItem & { product: Product }> => {
     return productInventoryService.getAllInventory();
   };
@@ -173,6 +175,10 @@ export default function useProductInventory() {
     try {
       const updatedProduct = await productService.updateProduct(productId, { stock: newQuantity });
       setProducts(prev => prev.map(p => p.id === productId ? updatedProduct : p));
+      toast({
+        title: 'Success',
+        description: 'Stock updated successfully',
+      });
       return true;
     } catch (error) {
       console.error('Error updating stock:', error);
@@ -197,7 +203,7 @@ export default function useProductInventory() {
     getProductStock,
     updateStock,
     refreshProducts: fetchProducts,
-    // Add these methods to the return object
+    // Inventory management methods
     getAllInventory,
     getProductInventory,
     updateProductStock

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Search, Filter, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,15 +26,19 @@ import useProductInventory from '@/hooks/useProductInventory';
 import { useToast } from '@/hooks/use-toast';
 import { getCategories } from '@/services/productService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useProductAttributes } from '@/hooks/useProductAttributes';
+import { AttributeDisplay } from '@/components/products/AttributeDisplay';
 
 const Products: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, loading, refreshProducts } = useProductInventory();
+  const { setProductAttributes, getProductAttributes } = useProductAttributes();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [categoryLoading, setCategoryLoading] = useState(true);
+  const [productAttributes, setProductAttributesState] = useState<Map<string, any[]>>(new Map());
   
   // Dialog states
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
@@ -75,6 +80,30 @@ const Products: React.FC = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
+  // Load product attributes for display in the table
+  useEffect(() => {
+    const loadProductAttributes = async () => {
+      const attributesMap = new Map<string, any[]>();
+      
+      for (const product of products) {
+        try {
+          const attrs = await getProductAttributes(product.id);
+          if (attrs.length > 0) {
+            attributesMap.set(product.id, attrs);
+          }
+        } catch (error) {
+          console.error(`Error loading attributes for product ${product.id}:`, error);
+        }
+      }
+      
+      setProductAttributesState(attributesMap);
+    };
+    
+    if (products.length > 0) {
+      loadProductAttributes();
+    }
+  }, [products, getProductAttributes]);
+
   // Handle refresh
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -107,17 +136,27 @@ const Products: React.FC = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  // Handle save product (create or update)
-  const handleSaveProduct = async (productData: Partial<Product>) => {
+  // Handle save product (create or update) with attributes
+  const handleSaveProduct = async (
+    productData: Partial<Product>, 
+    attributes?: Array<{ attributeId: string, values: string[] }>
+  ) => {
     setIsSubmitting(true);
     
     try {
       if (selectedProduct) {
         // Update existing product
-        await updateProduct(selectedProduct.id, productData);
+        const updatedProduct = await updateProduct(selectedProduct.id, productData);
+        
+        // Update attributes if provided
+        if (attributes && attributes.length > 0) {
+          await setProductAttributes(selectedProduct.id, attributes);
+        }
+        
+        return updatedProduct;
       } else {
         // Create new product
-        await addProduct({
+        const newProduct = await addProduct({
           name: productData.name || 'Untitled Product',
           price: productData.price || 0,
           stock: productData.stock || 0,
@@ -128,13 +167,19 @@ const Products: React.FC = () => {
           sku: productData.sku,
           subcategory: productData.subcategory,
         });
+        
+        // Add attributes if provided
+        if (attributes && attributes.length > 0 && newProduct) {
+          await setProductAttributes(newProduct.id, attributes);
+        }
+        
+        return newProduct;
       }
-      
-      setIsProductDialogOpen(false);
     } catch (error) {
       console.error('Error saving product:', error);
       // Toast is already handled in the hook
     } finally {
+      setIsProductDialogOpen(false);
       setIsSubmitting(false);
     }
   };
@@ -234,7 +279,7 @@ const Products: React.FC = () => {
                   <ArrowUpDown className="h-3 w-3" />
                 </div>
               </TableHead>
-              <TableHead>Category</TableHead>
+              <TableHead>Attributes</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -286,12 +331,27 @@ const Products: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      <div className="font-medium">{product.name}</div>
+                      <div>
+                        <div className="font-medium">{product.name}</div>
+                        {product.sku && (
+                          <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>${product.price.toFixed(2)}</TableCell>
                   <TableCell>{product.stock}</TableCell>
-                  <TableCell>{product.category}</TableCell>
+                  <TableCell>
+                    {productAttributes.has(product.id) && productAttributes.get(product.id)?.length > 0 ? (
+                      <AttributeDisplay 
+                        attributes={productAttributes.get(product.id) || []} 
+                        showLabels={true}
+                        className="max-w-[200px]"
+                      />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No attributes</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge 
                       variant={

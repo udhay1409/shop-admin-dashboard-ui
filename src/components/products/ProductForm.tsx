@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Product, ProductFormValues, ProductSize, ProductColor } from '@/types/product';
+import { Product, ProductFormValues } from '@/types/product';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -22,10 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Upload, Plus, Trash2, Square } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Upload, Plus, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AttributeManager } from './AttributeManager';
+import { useProductAttributes } from '@/hooks/useProductAttributes';
+import { ProductAttributeWithValues } from '@/types/attribute';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Product name must be at least 2 characters.' }),
@@ -37,8 +39,6 @@ const formSchema = z.object({
   category: z.string().min(1, { message: 'Please select a category.' }),
   subcategory: z.string().optional(),
   image: z.string().optional(),
-  availableSizes: z.array(z.enum(['XS', 'S', 'M', 'L', 'XL'])).optional(),
-  availableColors: z.array(z.enum(['Red', 'Blue', 'Green', 'Yellow', 'Pink', 'Black', 'White'])).optional(),
   bulkDiscountQuantity: z.coerce.number().min(0).optional(),
   bulkDiscountPercentage: z.coerce.number().min(0).max(100).optional(),
   additionalImages: z.array(z.string()).optional(),
@@ -46,7 +46,7 @@ const formSchema = z.object({
 
 export interface ProductFormProps {
   product?: Product;
-  onSubmit: (values: Partial<Product>) => Promise<void>;
+  onSubmit: (values: Partial<Product>, attributes?: Array<{ attributeId: string, values: string[] }>) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   categories: string[];
@@ -67,11 +67,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(product?.image || null);
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
   const [additionalPreviews, setAdditionalPreviews] = useState<string[]>(product?.additionalImages || []);
-  const [selectedCategory, setSelectedCategory] = useState<string>(product?.category || '');
+  const [productAttributes, setProductAttributes] = useState<ProductAttributeWithValues[]>([]);
+  const [attributesToSave, setAttributesToSave] = useState<Array<{ attributeId: string, values: string[] }>>([]);
   
-  // Available sizes and colors for selection
-  const sizes: ProductSize[] = ['XS', 'S', 'M', 'L', 'XL'];
-  const colors: ProductColor[] = ['Red', 'Blue', 'Green', 'Yellow', 'Pink', 'Black', 'White'];
+  const { getProductAttributes } = useProductAttributes();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -85,16 +84,26 @@ const ProductForm: React.FC<ProductFormProps> = ({
       category: product?.category || (categories.length > 0 ? categories[0] : 'Uncategorized'),
       subcategory: product?.subcategory || '',
       image: product?.image || '',
-      availableSizes: product?.availableSizes || [],
-      availableColors: product?.availableColors || [],
       bulkDiscountQuantity: product?.bulkDiscountQuantity || 0,
       bulkDiscountPercentage: product?.bulkDiscountPercentage || 0,
       additionalImages: product?.additionalImages || [],
     },
   });
 
-  // No need to fetch subcategories here as they're passed as props
-  // from ProductDialog.tsx which already fetches them
+  useEffect(() => {
+    if (product?.id) {
+      const loadProductAttributes = async () => {
+        try {
+          const attributes = await getProductAttributes(product.id);
+          setProductAttributes(attributes);
+        } catch (error) {
+          console.error('Error loading product attributes:', error);
+        }
+      };
+      
+      loadProductAttributes();
+    }
+  }, [product, getProductAttributes]);
 
   const handleCategoryChange = (value: string) => {
     onCategoryChange(value);
@@ -140,37 +149,24 @@ const ProductForm: React.FC<ProductFormProps> = ({
     form.setValue('additionalImages', newPreviews);
   };
 
-  const handleSizeChange = (size: ProductSize) => {
-    const currentSizes = form.getValues('availableSizes') || [];
-    const updated = currentSizes.includes(size) 
-      ? currentSizes.filter(s => s !== size)
-      : [...currentSizes, size];
-    
-    form.setValue('availableSizes', updated);
-  };
-
-  const handleColorChange = (color: ProductColor) => {
-    const currentColors = form.getValues('availableColors') || [];
-    const updated = currentColors.includes(color) 
-      ? currentColors.filter(c => c !== color)
-      : [...currentColors, color];
-    
-    form.setValue('availableColors', updated);
+  const handleAttributesChange = (attributes: Array<{ attributeId: string, values: string[] }>) => {
+    setAttributesToSave(attributes);
   };
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit(values);
+    onSubmit(values, attributesToSave);
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)}>
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid grid-cols-4 mb-4">
+          <TabsList className="grid grid-cols-5 mb-4">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="attributes">Attributes</TabsTrigger>
             <TabsTrigger value="pricing">Pricing & Inventory</TabsTrigger>
             <TabsTrigger value="images">Images</TabsTrigger>
+            <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
 
           {/* Basic Info Tab */}
@@ -321,59 +317,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
             />
           </TabsContent>
 
-          {/* Attributes Tab */}
-          <TabsContent value="attributes" className="space-y-6">
-            <div className="space-y-3">
-              <FormLabel>Available Sizes</FormLabel>
-              <div className="flex flex-wrap gap-2">
-                {sizes.map((size) => {
-                  const isSelected = form.getValues('availableSizes')?.includes(size) || false;
-                  return (
-                    <Badge 
-                      key={size} 
-                      variant={isSelected ? "default" : "outline"}
-                      className={`cursor-pointer ${isSelected ? 'bg-primary' : ''}`}
-                      onClick={() => handleSizeChange(size)}
-                    >
-                      <Square className="h-4 w-4 mr-1" />
-                      {size}
-                    </Badge>
-                  );
-                })}
-              </div>
-              <FormDescription>
-                Select all available sizes for this product
-              </FormDescription>
-            </div>
-            
-            <div className="space-y-3">
-              <FormLabel>Available Colors</FormLabel>
-              <div className="flex flex-wrap gap-2">
-                {colors.map((color) => {
-                  const isSelected = form.getValues('availableColors')?.includes(color) || false;
-                  return (
-                    <Badge 
-                      key={color} 
-                      variant={isSelected ? "default" : "outline"}
-                      className={`cursor-pointer ${isSelected ? 'bg-primary' : ''}`}
-                      onClick={() => handleColorChange(color)}
-                    >
-                      <span 
-                        className="inline-block w-3 h-3 rounded-full mr-1" 
-                        style={{ 
-                          backgroundColor: color.toLowerCase(),
-                          border: color.toLowerCase() === 'white' ? '1px solid #ddd' : 'none'
-                        }}
-                      ></span>
-                      {color}
-                    </Badge>
-                  );
-                })}
-              </div>
-              <FormDescription>
-                Select all available colors for this product
-              </FormDescription>
-            </div>
+          {/* Advanced Attributes Tab */}
+          <TabsContent value="attributes" className="space-y-4">
+            <AttributeManager 
+              productId={product?.id} 
+              initialAttributes={productAttributes}
+              onAttributesChange={handleAttributesChange}
+            />
           </TabsContent>
 
           {/* Pricing & Inventory Tab */}
@@ -563,6 +513,24 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </FormItem>
               )}
             />
+          </TabsContent>
+          
+          {/* Advanced Tab */}
+          <TabsContent value="advanced" className="space-y-4">
+            <div className="bg-muted/50 rounded-md p-4">
+              <h3 className="font-medium mb-2">Advanced Settings</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Additional product configuration options
+              </p>
+              
+              {/* Add advanced settings fields here */}
+              <div className="grid grid-cols-1 gap-4">
+                {/* Future fields can be added here */}
+                <div className="text-sm text-muted-foreground">
+                  No advanced settings configured yet.
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
 

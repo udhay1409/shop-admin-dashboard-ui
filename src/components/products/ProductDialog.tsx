@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import ProductForm from './ProductForm';
 import { Product } from '@/types/product';
@@ -15,7 +16,7 @@ interface ProductDialogProps {
   isOpen: boolean;
   onClose: () => void;
   product?: Product;
-  onSubmit: (values: Partial<Product>) => Promise<void>;
+  onSubmit: (values: Partial<Product>, attributes?: Array<{ attributeId: string, values: string[] }>) => Promise<void>;
   isSubmitting: boolean;
   categories: string[];
 }
@@ -77,6 +78,11 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{product ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+          <DialogDescription>
+            {product 
+              ? 'Update the product information below.' 
+              : 'Fill out the form below to add a new product to your inventory.'}
+          </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[80vh] pr-4">
           <ProductForm
