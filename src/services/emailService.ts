@@ -1,7 +1,7 @@
 
 import { toast } from "@/components/ui/use-toast";
 
-interface EmailConfig {
+export interface EmailConfig {
   host: string;
   port: number;
   username: string;

@@ -46,7 +46,7 @@ const SMTPSettings: React.FC = () => {
   const storedConfig = getEmailConfig();
   
   // Default values for the form
-  const defaultValues: Partial<SMTPFormValues> = {
+  const defaultValues: SMTPFormValues = {
     host: storedConfig.host,
     port: storedConfig.port,
     username: storedConfig.username,
@@ -64,9 +64,21 @@ const SMTPSettings: React.FC = () => {
   });
 
   async function onSubmit(data: SMTPFormValues) {
+    // Create a config object with all required properties
+    const config = {
+      host: data.host,
+      port: data.port,
+      username: data.username,
+      password: data.password,
+      encryption: data.encryption,
+      fromEmail: data.fromEmail,
+      fromName: data.fromName,
+      enableSmtp: data.enableSmtp
+    };
+    
     // Save SMTP settings to localStorage
-    saveEmailConfig(data);
-    console.log("SMTP settings saved:", data);
+    saveEmailConfig(config);
+    console.log("SMTP settings saved:", config);
 
     // Show a success message
     toast({
@@ -80,7 +92,7 @@ const SMTPSettings: React.FC = () => {
         to: data.fromEmail,
         subject: "Test Email from Your Store",
         body: `<h1>Test Email</h1><p>This is a test email from your store's SMTP configuration.</p>`
-      }, data);
+      }, config);
       
       if (testEmailSent) {
         toast({

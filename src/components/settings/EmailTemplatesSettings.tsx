@@ -141,7 +141,7 @@ const EmailTemplatesSettings: React.FC = () => {
                         <Textarea rows={10} {...field} />
                       </FormControl>
                       <FormDescription>
-                        Available variables: {{customerName}}
+                        Available variables: {"{"}{"{"}"customerName"{"}"}{"}"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -174,7 +174,7 @@ const EmailTemplatesSettings: React.FC = () => {
                         <Textarea rows={10} {...field} />
                       </FormControl>
                       <FormDescription>
-                        Available variables: {{customerName}}, {{orderNumber}}, {{items}}, {{total}}
+                        Available variables: {"{"}{"{"}"customerName"{"}"}{"}"}, {"{"}{"{"}"orderNumber"{"}"}{"}"}, {"{"}{"{"}"items"{"}"}{"}"}, {"{"}{"{"}"total"{"}"}{"}"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -207,7 +207,7 @@ const EmailTemplatesSettings: React.FC = () => {
                         <Textarea rows={10} {...field} />
                       </FormControl>
                       <FormDescription>
-                        Available variables: {{customerName}}, {{orderNumber}}, {{trackingNumber}}, {{carrier}}
+                        Available variables: {"{"}{"{"}"customerName"{"}"}{"}"}, {"{"}{"{"}"orderNumber"{"}"}{"}"}, {"{"}{"{"}"trackingNumber"{"}"}{"}"}, {"{"}{"{"}"carrier"{"}"}{"}"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -240,7 +240,7 @@ const EmailTemplatesSettings: React.FC = () => {
                         <Textarea rows={10} {...field} />
                       </FormControl>
                       <FormDescription>
-                        Available variables: {{customerName}}, {{items}}
+                        Available variables: {"{"}{"{"}"customerName"{"}"}{"}"}, {"{"}{"{"}"items"{"}"}{"}"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
