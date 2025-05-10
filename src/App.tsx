@@ -9,6 +9,7 @@ import Protected from '@/components/auth/Protected';
 import Dashboard from '@/pages/Dashboard';
 import StoreFront from '@/pages/StoreFront';
 import { AuthProvider } from '@/contexts/AuthContext';
+import Settings from '@/pages/Settings';
 
 function App() {
   const queryClient = new QueryClient();
@@ -53,7 +54,7 @@ function App() {
               <Route path="/settings" element={
                 <Protected>
                   <AdminLayout>
-                    <div>Settings Page</div>
+                    <Settings />
                   </AdminLayout>
                 </Protected>
               } />
