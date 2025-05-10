@@ -21,6 +21,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="inventory" element={<Inventory />} />
             <Route path="coupon-code" element={<CouponCodes />} />
             <Route path="reviews" element={<Reviews />} />
+            <Route path="settings" element={<Settings />} />
             <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
             {/* Other routes will be added as they're needed */}
             <Route path="*" element={<NotFound />} />
