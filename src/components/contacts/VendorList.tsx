@@ -12,7 +12,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Store, Eye, MoreHorizontal, Phone, FileText } from 'lucide-react';
 import {
   DropdownMenu,
@@ -22,15 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-interface Vendor {
-  id: string;
-  name: string;
-  contact_name: string;
-  email: string;
-  phone: string;
-  status: string;
-}
+import { Vendor, getVendors } from '@/services/vendorService';
 
 export const VendorList = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -41,13 +32,8 @@ export const VendorList = () => {
   useEffect(() => {
     const fetchVendors = async () => {
       try {
-        const { data, error } = await supabase
-          .from('vendors')
-          .select('id, name, contact_name, email, phone, status')
-          .order('name');
-        
-        if (error) throw error;
-        setVendors(data || []);
+        const data = await getVendors();
+        setVendors(data);
       } catch (error: any) {
         console.error('Error fetching vendors:', error);
         toast({
@@ -147,7 +133,7 @@ export const VendorList = () => {
                         View Details
                       </DropdownMenuItem>
                       {vendor.phone && (
-                        <DropdownMenuItem onClick={() => handleCall(vendor.phone)}>
+                        <DropdownMenuItem onClick={() => handleCall(vendor.phone!)}>
                           <Phone size={14} className="mr-2" />
                           Call
                         </DropdownMenuItem>

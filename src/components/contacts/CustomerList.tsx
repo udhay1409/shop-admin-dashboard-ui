@@ -41,11 +41,11 @@ export const CustomerList = () => {
       try {
         const data = await getCustomers();
         setCustomers(data);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching customers:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load customers',
+          description: error.message || 'Failed to load customers',
           variant: 'destructive',
         });
       } finally {
