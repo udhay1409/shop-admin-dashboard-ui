@@ -23,11 +23,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Upload, Plus, Trash2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Upload, Plus, Trash2, Info } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AttributeManager } from './AttributeManager';
 import { useProductAttributes } from '@/hooks/useProductAttributes';
 import { ProductAttributeWithValues } from '@/types/attribute';
+import { Switch } from '@/components/ui/switch';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger 
+} from '@/components/ui/tooltip';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Product name must be at least 2 characters.' }),
@@ -42,6 +49,13 @@ const formSchema = z.object({
   bulkDiscountQuantity: z.coerce.number().min(0).optional(),
   bulkDiscountPercentage: z.coerce.number().min(0).max(100).optional(),
   additionalImages: z.array(z.string()).optional(),
+  // Advanced settings
+  isNew: z.boolean().optional(),
+  isSale: z.boolean().optional(),
+  discountPercentage: z.coerce.number().min(0).max(100).optional(),
+  originalPrice: z.coerce.number().min(0).optional(),
+  trending: z.boolean().optional(),
+  hotSelling: z.boolean().optional(),
 });
 
 export interface ProductFormProps {
@@ -87,8 +101,18 @@ const ProductForm: React.FC<ProductFormProps> = ({
       bulkDiscountQuantity: product?.bulkDiscountQuantity || 0,
       bulkDiscountPercentage: product?.bulkDiscountPercentage || 0,
       additionalImages: product?.additionalImages || [],
+      // Advanced settings
+      isNew: product?.isNew || false,
+      isSale: product?.isSale || false,
+      discountPercentage: product?.discountPercentage || 0,
+      originalPrice: product?.originalPrice || 0,
+      trending: product?.trending || false,
+      hotSelling: product?.hotSelling || false,
     },
   });
+
+  // Watch values for conditional fields
+  const isSaleValue = form.watch('isSale');
 
   useEffect(() => {
     if (product?.id) {
@@ -523,11 +547,160 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 Additional product configuration options
               </p>
               
-              {/* Add advanced settings fields here */}
-              <div className="grid grid-cols-1 gap-4">
-                {/* Future fields can be added here */}
-                <div className="text-sm text-muted-foreground">
-                  No advanced settings configured yet.
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Product Badge Settings */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold border-b pb-1">Product Badges</h4>
+                  
+                  <FormField
+                    control={form.control}
+                    name="isNew"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>New Badge</FormLabel>
+                          <FormDescription>
+                            Mark this product as new
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="trending"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Trending</FormLabel>
+                          <FormDescription>
+                            Mark this product as trending
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="hotSelling"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>Hot Selling</FormLabel>
+                          <FormDescription>
+                            Mark this product as hot selling
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                {/* Sale & Pricing Settings */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold border-b pb-1">Sale Settings</h4>
+                  
+                  <FormField
+                    control={form.control}
+                    name="isSale"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel>On Sale</FormLabel>
+                          <FormDescription>
+                            Mark this product as being on sale
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {isSaleValue && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="originalPrice"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Original Price ($)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                step="0.01"
+                                {...field}
+                                value={field.value || ''}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Original price before discount
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="discountPercentage"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Discount Percentage (%)</FormLabel>
+                            <div className="flex items-center gap-2">
+                              <FormControl className="flex-1">
+                                <Input 
+                                  type="number" 
+                                  min="0" 
+                                  max="100"
+                                  {...field}
+                                  value={field.value || ''}
+                                />
+                              </FormControl>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="rounded-full p-1 hover:bg-muted">
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="max-w-xs text-sm">
+                                    Sale price will be calculated automatically based on the original price and discount percentage
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
                 </div>
               </div>
             </div>
