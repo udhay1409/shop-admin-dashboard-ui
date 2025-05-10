@@ -9,7 +9,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { useLocation } from 'react-router-dom';
 
 interface BreadcrumbProps {
   items: {

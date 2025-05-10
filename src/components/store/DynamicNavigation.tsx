@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -10,7 +9,7 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
-import { Category } from '@/types/category';
+import { Category, CategoryStatus } from '@/types/category';
 
 interface DynamicNavigationProps {
   className?: string;
@@ -24,13 +23,13 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
   useEffect(() => {
     // In a real app, you would fetch these from your API or backend
     // For now, we'll use mock data
-    const mockCategories = [
+    const mockCategories: Category[] = [
       {
         id: "1",
         name: "Kurthi",
         slug: "kurthi",
         description: "Beautiful kurthi collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 42,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -40,7 +39,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Salwar Suits",
         slug: "salwar-suits",
         description: "Elegant salwar suits",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 36,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -50,7 +49,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Lehenga Cholis",
         slug: "lehenga-cholis",
         description: "Traditional lehenga cholis",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 24,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -60,21 +59,21 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Dupattas",
         slug: "dupattas",
         description: "Stylish dupattas collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 18,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
     ];
     
-    const mockSubcategories = [
+    const mockSubcategories: Category[] = [
       // Kurthi subcategories
       {
         id: "101",
         name: "Long Kurthi",
         slug: "long-kurthi",
         description: "Long Kurthi collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 24,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -85,7 +84,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Short Kurthi",
         slug: "short-kurthi",
         description: "Short Kurthi collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 18,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -96,7 +95,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Designer Kurthi",
         slug: "designer-kurthi",
         description: "Designer Kurthi collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 14,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -109,7 +108,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Anarkali Suits",
         slug: "anarkali-suits",
         description: "Anarkali Suits collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 15,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -120,7 +119,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Punjabi Suits",
         slug: "punjabi-suits",
         description: "Punjabi Suits collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 12,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -133,7 +132,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Bridal Lehenga",
         slug: "bridal-lehenga",
         description: "Bridal Lehenga collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 10,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -144,7 +143,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Designer Lehenga",
         slug: "designer-lehenga",
         description: "Designer Lehenga collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 14,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -157,7 +156,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Silk Dupattas",
         slug: "silk-dupattas",
         description: "Silk Dupattas collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 8,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -168,7 +167,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Cotton Dupattas",
         slug: "cotton-dupattas",
         description: "Cotton Dupattas collection",
-        status: "Active",
+        status: "Active" as CategoryStatus,
         productsCount: 10,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
