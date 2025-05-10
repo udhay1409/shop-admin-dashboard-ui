@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Table, 
-  TableHeader, 
-  TableBody, 
-  TableRow, 
-  TableHead, 
-  TableCell 
-} from "@/components/ui/table";
-import { 
   Tabs, 
   TabsContent, 
   TabsList, 
@@ -46,12 +38,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Search, FilterIcon, CalendarIcon, CheckCircle, ArrowRight, Package, Truck, Check, X, Clock, MapPin, PackageOpen, Download, Printer } from "lucide-react";
+import { Search, FilterIcon, CalendarIcon, Download, Printer } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import OrderTimeline from '@/components/orders/OrderTimeline';
 import OrdersTable from '@/components/orders/OrdersTable';
 import OrderFormDialog from '@/components/orders/OrderFormDialog';
 import { Order } from '@/types/order';
+import { getAllOrders, updateOrderStatus, createOrder } from '@/services/orderService';
 
 const Orders: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,180 +60,101 @@ const Orders: React.FC = () => {
   const [paymentFilter, setPaymentFilter] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [ordersData, setOrdersData] = useState<Order[]>([]);
 
-  // Enhanced sample order data with delivery information
-  const [ordersData, setOrdersData] = useState<Order[]>([
-    {
-      id: 'ORD1001',
-      date: '09 May 2025',
-      customerName: 'Priya Sharma',
-      items: '1 Kurti, 1 Dupatta',
-      total: '₹1,299',
-      payment: 'UPI - GPay',
-      status: 'Pending',
-      expectedAction: 'Confirm within 24 hrs',
-      address: '123 MG Road, Bangalore, Karnataka',
-      phone: '+91 98765 43210'
-    },
-    {
-      id: 'ORD1002',
-      date: '08 May 2025',
-      customerName: 'Rahul Mehra',
-      items: '2 T-shirts, 1 Jeans',
-      total: '₹2,499',
-      payment: 'Credit Card',
-      status: 'Packed',
-      deliveryStatus: 'Awaiting Dispatch',
-      estimatedDelivery: '12 May 2025',
-      expectedAction: 'Ready for shipping',
-      address: '456 Park Street, Mumbai, Maharashtra',
-      phone: '+91 87654 32109'
-    },
-    {
-      id: 'ORD1003',
-      date: '07 May 2025',
-      customerName: 'Anjali Patel',
-      items: '1 Saree',
-      total: '₹3,999',
-      payment: 'COD',
-      status: 'Shipped',
-      deliveryStatus: 'Out for Delivery',
-      estimatedDelivery: '12 May 2025',
-      deliveryTrackingId: 'TRACK123456',
-      deliveryCarrier: 'Express Delivery',
-      expectedAction: 'Delivery expected May 12',
-      address: '789 Gandhi Road, Ahmedabad, Gujarat',
-      phone: '+91 76543 21098'
-    },
-    {
-      id: 'ORD1004',
-      date: '06 May 2025',
-      customerName: 'Kiran Reddy',
-      items: '1 Lehenga Set',
-      total: '₹8,499',
-      payment: 'UPI - PhonePe',
-      status: 'Delivered',
-      deliveryStatus: 'Delivered',
-      estimatedDelivery: '08 May 2025',
-      deliveryTrackingId: 'TRACK654321',
-      deliveryCarrier: 'Premium Courier',
-      deliveryNotes: 'Left with security',
-      expectedAction: 'Delivered on May 8',
-      address: '234 Jubilee Hills, Hyderabad, Telangana',
-      phone: '+91 65432 10987'
-    },
-    {
-      id: 'ORD1005',
-      date: '05 May 2025',
-      customerName: 'Vikram Singh',
-      items: '3 Shirts, 2 Trousers',
-      total: '₹4,299',
-      payment: 'Net Banking',
-      status: 'Cancelled',
-      expectedAction: 'Refund initiated',
-      address: '567 Model Town, Delhi',
-      phone: '+91 54321 09876'
-    },
-    {
-      id: 'ORD1006',
-      date: '04 May 2025',
-      customerName: 'Meera Desai',
-      items: '1 Anarkali Suit',
-      total: '₹2,799',
-      payment: 'Debit Card',
-      status: 'Exchanged',
-      expectedAction: 'New item dispatched',
-      address: '890 Salt Lake, Kolkata, West Bengal',
-      phone: '+91 43210 98765'
-    },
-    {
-      id: 'ORD1007',
-      date: '03 May 2025',
-      customerName: 'Arjun Kumar',
-      items: '2 Kurta Sets',
-      total: '₹3,599',
-      payment: 'UPI - GPay',
-      status: 'Pending',
-      expectedAction: 'Confirm within 24 hrs',
-      address: '432 Anna Nagar, Chennai, Tamil Nadu',
-      phone: '+91 32109 87654'
-    },
-    {
-      id: 'ORD1008',
-      date: '02 May 2025',
-      customerName: 'Neha Verma',
-      items: '1 Designer Gown',
-      total: '₹5,999',
-      payment: 'Credit Card',
-      status: 'Packed',
-      deliveryStatus: 'Awaiting Dispatch',
-      estimatedDelivery: '15 May 2025',
-      expectedAction: 'Ready for shipping',
-      address: '765 Koregaon Park, Pune, Maharashtra',
-      phone: '+91 21098 76543'
+  // Fetch orders from the database
+  useEffect(() => {
+    async function fetchOrders() {
+      setIsLoading(true);
+      try {
+        const orders = await getAllOrders();
+        setOrdersData(orders);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        toast({
+          title: "Error loading orders",
+          description: "There was a problem loading your orders.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
-  ]);
+    
+    fetchOrders();
+  }, []);
 
   // Handle order status update with enhanced delivery tracking
-  const updateOrderStatus = (orderId: string, newStatus: Order['status'], deliveryInfo?: Partial<Order>) => {
-    const updatedOrders = ordersData.map(order => {
-      if (order.id === orderId) {
-        let expectedAction = '';
-        let deliveryStatus = order.deliveryStatus;
-        
-        switch(newStatus) {
-          case 'Packed':
-            expectedAction = 'Ready for shipping';
-            deliveryStatus = 'Awaiting Dispatch';
-            break;
-          case 'Shipped':
-            expectedAction = 'Delivery expected in 3-5 days';
-            deliveryStatus = 'Out for Delivery';
-            break;
-          case 'Delivered':
-            expectedAction = 'Delivered successfully';
-            deliveryStatus = 'Delivered';
-            break;
-          case 'Cancelled':
-            expectedAction = 'Refund initiated';
-            deliveryStatus = null;
-            break;
-          default:
-            expectedAction = order.expectedAction;
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status'], deliveryInfo?: Partial<Order>) => {
+    const success = await updateOrderStatus(orderId, newStatus, {
+      deliveryStatus: deliveryInfo?.deliveryStatus,
+      estimatedDelivery: deliveryInfo?.estimatedDelivery,
+      deliveryTrackingId: deliveryInfo?.deliveryTrackingId,
+      deliveryCarrier: deliveryInfo?.deliveryCarrier,
+      deliveryNotes: deliveryInfo?.deliveryNotes,
+    });
+    
+    if (success) {
+      // Optimistically update the UI
+      const updatedOrders = ordersData.map(order => {
+        if (order.id === orderId) {
+          let expectedAction = '';
+          let deliveryStatus = order.deliveryStatus;
+          
+          switch(newStatus) {
+            case 'Packed':
+              expectedAction = 'Ready for shipping';
+              deliveryStatus = 'Awaiting Dispatch';
+              break;
+            case 'Shipped':
+              expectedAction = 'Delivery expected in 3-5 days';
+              deliveryStatus = 'Out for Delivery';
+              break;
+            case 'Delivered':
+              expectedAction = 'Delivered successfully';
+              deliveryStatus = 'Delivered';
+              break;
+            case 'Cancelled':
+              expectedAction = 'Refund initiated';
+              deliveryStatus = null;
+              break;
+            default:
+              expectedAction = order.expectedAction;
+          }
+          
+          return { 
+            ...order, 
+            status: newStatus, 
+            expectedAction,
+            deliveryStatus: deliveryInfo?.deliveryStatus || deliveryStatus,
+            estimatedDelivery: deliveryInfo?.estimatedDelivery || order.estimatedDelivery,
+            deliveryTrackingId: deliveryInfo?.deliveryTrackingId || order.deliveryTrackingId,
+            deliveryCarrier: deliveryInfo?.deliveryCarrier || order.deliveryCarrier,
+            deliveryNotes: deliveryInfo?.deliveryNotes || order.deliveryNotes
+          };
         }
-        
-        return { 
-          ...order, 
-          status: newStatus, 
-          expectedAction,
-          deliveryStatus: deliveryInfo?.deliveryStatus || deliveryStatus,
-          estimatedDelivery: deliveryInfo?.estimatedDelivery || order.estimatedDelivery,
-          deliveryTrackingId: deliveryInfo?.deliveryTrackingId || order.deliveryTrackingId,
-          deliveryCarrier: deliveryInfo?.deliveryCarrier || order.deliveryCarrier,
-          deliveryNotes: deliveryInfo?.deliveryNotes || order.deliveryNotes
-        };
-      }
-      return order;
-    });
-    
-    setOrdersData(updatedOrders);
-    
-    // Show a confirmation toast
-    toast({
-      title: `Order ${orderId} Updated`,
-      description: `Status changed to ${newStatus}`,
-      variant: "default",
-    });
+        return order;
+      });
+      
+      setOrdersData(updatedOrders);
+      
+      toast({
+        title: `Order ${orderId} Updated`,
+        description: `Status changed to ${newStatus}`,
+        variant: "default",
+      });
+    }
   };
 
   // Handle confirm order action
   const handleConfirmOrder = (orderId: string) => {
-    updateOrderStatus(orderId, 'Packed');
+    handleUpdateOrderStatus(orderId, 'Packed');
   };
 
   // Handle cancel order action
   const handleCancelOrder = (orderId: string) => {
-    updateOrderStatus(orderId, 'Cancelled');
+    handleUpdateOrderStatus(orderId, 'Cancelled');
     setIsCancelDialogOpen(false);
   };
 
@@ -261,7 +175,7 @@ const Orders: React.FC = () => {
     deliveryDate.setDate(today.getDate() + 5);
     const formattedDeliveryDate = `${deliveryDate.getDate()} ${deliveryDate.toLocaleString('default', { month: 'short' })} ${deliveryDate.getFullYear()}`;
     
-    updateOrderStatus(orderId, 'Shipped', {
+    handleUpdateOrderStatus(orderId, 'Shipped', {
       deliveryStatus: 'Out for Delivery',
       estimatedDelivery: formattedDeliveryDate,
       deliveryTrackingId: trackingId,
@@ -277,7 +191,7 @@ const Orders: React.FC = () => {
 
   // Handle delivery completion
   const handleDeliveryComplete = (orderId: string) => {
-    updateOrderStatus(orderId, 'Delivered', {
+    handleUpdateOrderStatus(orderId, 'Delivered', {
       deliveryStatus: 'Delivered',
       deliveryNotes: deliveryNotes
     });
@@ -514,46 +428,40 @@ const Orders: React.FC = () => {
   };
 
   // Create a new order
-  const handleCreateOrder = (newOrderData: Partial<Order>) => {
-    // Generate a unique order ID
-    const orderId = `ORD${Math.floor(1000 + Math.random() * 9000)}`;
+  const handleCreateOrder = async (newOrderData: Partial<Order>) => {
+    const orderId = await createOrder(newOrderData);
     
-    // Get current date in the format "DD MMM YYYY"
-    const today = new Date();
-    const formattedDate = `${today.getDate().toString().padStart(2, '0')} ${today.toLocaleString('default', { month: 'short' })} ${today.getFullYear()}`;
-    
-    // Create the complete new order
-    const newOrder: Order = {
-      id: orderId,
-      date: formattedDate,
-      customerName: newOrderData.customerName || '',
-      items: newOrderData.items || '',
-      total: newOrderData.total || '',
-      payment: newOrderData.payment || '',
-      status: 'Pending',
-      expectedAction: 'Confirm within 24 hrs',
-      address: newOrderData.address,
-      phone: newOrderData.phone
-    };
-    
-    // Add the new order to the orders data
-    setOrdersData(prevOrders => [newOrder, ...prevOrders]);
-    
-    // Close the dialog
-    setIsNewOrderDialogOpen(false);
-    
-    // Show confirmation toast
-    toast({
-      title: "New Order Created",
-      description: `Order ID: ${orderId}`,
-      variant: "default",
-    });
+    if (orderId) {
+      // Refresh the orders list
+      const orders = await getAllOrders();
+      setOrdersData(orders);
+      
+      // Close the dialog
+      setIsNewOrderDialogOpen(false);
+      
+      // Show confirmation toast
+      toast({
+        title: "New Order Created",
+        description: `Order ID: ${orderId}`,
+        variant: "default",
+      });
+    }
   };
 
   // Handle order creation
   const handleNewOrder = () => {
     setIsNewOrderDialogOpen(true);
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#EC008C] border-t-transparent"></div>
+        <p className="mt-4 text-gray-600">Loading orders...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
