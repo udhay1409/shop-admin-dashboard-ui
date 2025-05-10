@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -125,57 +124,42 @@ const AppWithAuth = () => {
 };
 
 function App() {
-  // Function to create admin user on app startup if it doesn't exist
+  // Function to create admin users on app startup
   useEffect(() => {
-    const createAdminUser = async () => {
+    const createAdminUsers = async () => {
       try {
-        // Check if admin user exists by trying to sign in
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: 'kansha@mntfuture.com',
-          password: '123456'
+        // Create the first admin user (kansha@mntfuture.com)
+        const response1 = await fetch('https://uhahxzsenmhdtgmltrjs.supabase.co/functions/v1/create-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'kansha@mntfuture.com',
+            password: '123456'
+          })
         });
         
-        if (error && error.message.includes('Invalid login credentials')) {
-          // If login failed, create the admin user
-          const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
-            email: 'kansha@mntfuture.com',
-            password: '123456',
-            email_confirm: true, // Automatically confirm email
-            user_metadata: {
-              first_name: 'Admin',
-              last_name: 'User'
-            }
-          });
-          
-          if (signUpError) {
-            console.error('Error creating admin user:', signUpError);
-          } else {
-            console.log('Admin user created successfully');
-            
-            // Add admin role
-            const { error: roleError } = await supabase
-              .from('user_roles')
-              .insert({
-                user_id: signUpData.user.id,
-                role: 'admin'
-              });
-              
-            if (roleError) {
-              console.error('Error setting admin role:', roleError);
-            }
-          }
-        }
+        const result1 = await response1.json();
+        console.log('Admin 1 creation result:', result1);
         
-        // Sign out after checking/creating admin
-        if (data?.user) {
-          await supabase.auth.signOut();
-        }
+        // Create the second admin user (mkansha2312@gmail.com)
+        const response2 = await fetch('https://uhahxzsenmhdtgmltrjs.supabase.co/functions/v1/create-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'mkansha2312@gmail.com',
+            password: '123456'
+          })
+        });
+        
+        const result2 = await response2.json();
+        console.log('Admin 2 creation result:', result2);
+        
       } catch (error) {
         console.error('Error in admin user setup:', error);
       }
     };
     
-    createAdminUser();
+    createAdminUsers();
   }, []);
 
   return (
