@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Product, ProductFormValues, ProductStatus } from "@/types/product";
 
@@ -159,7 +160,7 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
     isSale: data.is_sale,
     trending: data.trending,
     hotSelling: data.hot_selling,
-    // These fields might not exist in the database yet, so we provide default values
+    // For newly created products, use the values from the input data
     subcategory: productData.subcategory || '',
     availableSizes: productData.availableSizes || [],
     availableColors: productData.availableColors || [],
@@ -250,8 +251,7 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
     isSale: data.is_sale,
     trending: data.trending,
     hotSelling: data.hot_selling,
-    // These fields might not exist in the database yet, so we provide default values
-    // For update operations, we use the values from the update data if provided
+    // For update operations, use the values from the update data if provided
     subcategory: productData.subcategory || '',
     availableSizes: productData.availableSizes || [],
     availableColors: productData.availableColors || [],
