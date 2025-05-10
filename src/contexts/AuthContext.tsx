@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -66,7 +65,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       if (!user) return null;
 
-      // Using Supabase's generic table query since we don't have type definitions
       const { data, error } = await supabase
         .from('user_roles')
         .select('*')
