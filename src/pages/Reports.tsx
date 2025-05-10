@@ -1,9 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RevenueChart from '@/components/RevenueChart';
 import ProductTable from '@/components/ProductTable';
-import { Product } from '@/components/ProductTable';
 import MetricCard from '@/components/MetricCard';
+import SalesReport from '@/components/reports/SalesReport';
+import TopProductsReport from '@/components/reports/TopProductsReport';
+import ReportTypeSelector from '@/components/reports/ReportTypeSelector';
+import ReportDateRangePicker from '@/components/reports/ReportDateRangePicker';
 
 // Sample data for the metrics
 const revenueChartData = [
@@ -57,7 +62,7 @@ const revenueData = [
 ];
 
 // Sample data for product tables
-const topProducts: Product[] = [
+const topProducts = [
   { 
     id: '1', 
     name: 'Men Grey Hoodie', 
@@ -89,50 +94,87 @@ const topProducts: Product[] = [
 ];
 
 const Reports: React.FC = () => {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Reports</h1>
+  const [dateRange, setDateRange] = useState<{from: Date | undefined, to: Date | undefined}>({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
+    to: new Date()
+  });
+  
+  const [reportType, setReportType] = useState<'overview' | 'sales' | 'products' | 'customers'>('overview');
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <MetricCard 
-          title="Revenue" 
-          value="$7,825" 
-          subtitle="This Month" 
-          change={{ value: 22, isPositive: true }} 
-          chartData={revenueChartData}
-        />
-        <MetricCard 
-          title="Orders" 
-          value="920" 
-          subtitle="Today" 
-          change={{ value: 25, isPositive: false }} 
-          chartData={ordersChartData}
-        />
-        <MetricCard 
-          title="New Users" 
-          value="12k" 
-          change={{ value: 1.9, isPositive: true }} 
-          chartData={newUsersChartData}
-        />
-        <MetricCard 
-          title="Existing User" 
-          value="3.5K" 
-          change={{ value: 1.9, isPositive: true }} 
-          chartData={existingUsersChartData}
-        />
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl font-bold">Reports</h1>
+        
+        <div className="flex flex-col sm:flex-row gap-2">
+          <ReportTypeSelector value={reportType} onValueChange={setReportType} />
+          <ReportDateRangePicker value={dateRange} onChange={setDateRange} />
+        </div>
       </div>
-      
-      {/* Revenue Chart */}
-      <div className="mb-6">
-        <RevenueChart data={revenueData} currentRevenue={315060} />
-      </div>
-      
-      {/* Product Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ProductTable title="Top 5 Products" products={topProducts} />
-        <ProductTable title="Top 5 Categories" products={topProducts} />
-      </div>
+
+      <Tabs defaultValue="overview" value={reportType} onValueChange={(value) => setReportType(value as any)}>
+        <TabsContent value="overview" className="space-y-6">
+          {/* Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard 
+              title="Revenue" 
+              value="$7,825" 
+              subtitle="This Month" 
+              change={{ value: 22, isPositive: true }} 
+              chartData={revenueChartData}
+            />
+            <MetricCard 
+              title="Orders" 
+              value="920" 
+              subtitle="Today" 
+              change={{ value: 25, isPositive: false }} 
+              chartData={ordersChartData}
+            />
+            <MetricCard 
+              title="New Users" 
+              value="12k" 
+              change={{ value: 1.9, isPositive: true }} 
+              chartData={newUsersChartData}
+            />
+            <MetricCard 
+              title="Existing User" 
+              value="3.5K" 
+              change={{ value: 1.9, isPositive: true }} 
+              chartData={existingUsersChartData}
+            />
+          </div>
+          
+          {/* Revenue Chart */}
+          <div className="mb-6">
+            <RevenueChart data={revenueData} currentRevenue={315060} />
+          </div>
+          
+          {/* Product Tables */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ProductTable title="Top 5 Products" products={topProducts} />
+            <ProductTable title="Top 5 Categories" products={topProducts} />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="sales" className="space-y-6">
+          <SalesReport dateRange={dateRange} />
+        </TabsContent>
+        
+        <TabsContent value="products" className="space-y-6">
+          <TopProductsReport dateRange={dateRange} />
+        </TabsContent>
+        
+        <TabsContent value="customers" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Customer Analytics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Coming soon: Customer acquisition and retention reports.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
