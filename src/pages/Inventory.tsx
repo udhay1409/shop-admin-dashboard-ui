@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, PlusCircle, Filter, MoreHorizontal, Trash, Edit, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -119,7 +118,7 @@ const Inventory = () => {
     getAllInventory, 
     getProductInventory, 
     updateProductStock, 
-    getProductById 
+    findProductById 
   } = useProductInventory();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -192,7 +191,7 @@ const Inventory = () => {
 
   // Get product name for dialog
   const selectedProductName = selectedProductId 
-    ? getProductById(selectedProductId)?.name || 'Product'
+    ? (findProductById(selectedProductId)?.name || 'Product')
     : 'Product';
 
   return (

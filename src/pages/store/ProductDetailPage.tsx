@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,42 +29,54 @@ const ProductDetailPage: React.FC = () => {
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
   const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (productId) {
-      const foundProduct = getProductById(productId);
-      
-      if (foundProduct) {
-        // Enhance product with additional details if needed
-        const enhancedProduct = {
-          ...foundProduct,
-          rating: foundProduct.rating || 4,
-          reviews: foundProduct.reviews || Math.floor(Math.random() * 100),
-          availableColors: foundProduct.availableColors || 
-            ['Red', 'Blue', 'Green', 'Black', 'White'].slice(0, Math.floor(Math.random() * 5) + 1) as ProductColor[],
-          availableSizes: foundProduct.availableSizes || 
-            ['XS', 'S', 'M', 'L', 'XL'] as ProductSize[],
-        };
-        
-        setProduct(enhancedProduct);
-        
-        // Set default selected size and color
-        if (enhancedProduct.availableSizes?.length) {
-          setSelectedSize(enhancedProduct.availableSizes[0]);
+    async function loadProduct() {
+      if (productId) {
+        setLoading(true);
+        try {
+          const fetchedProduct = await getProductById(productId);
+          
+          if (fetchedProduct) {
+            // Enhance product with additional details if needed
+            const enhancedProduct: Product = {
+              ...fetchedProduct,
+              rating: fetchedProduct.rating || 4,
+              reviews: fetchedProduct.reviews || Math.floor(Math.random() * 100),
+              availableColors: fetchedProduct.availableColors || 
+                ['Red', 'Blue', 'Green', 'Black', 'White'].slice(0, Math.floor(Math.random() * 5) + 1) as ProductColor[],
+              availableSizes: fetchedProduct.availableSizes || 
+                ['XS', 'S', 'M', 'L', 'XL'] as ProductSize[],
+            };
+            
+            setProduct(enhancedProduct);
+            
+            // Set default selected size and color
+            if (enhancedProduct.availableSizes?.length) {
+              setSelectedSize(enhancedProduct.availableSizes[0]);
+            }
+            
+            if (enhancedProduct.availableColors?.length) {
+              setSelectedColor(enhancedProduct.availableColors[0]);
+            }
+            
+            // Find related products (same category)
+            const related = products
+              .filter(p => p.id !== productId && p.category === enhancedProduct.category && p.status === 'Active')
+              .slice(0, 4);
+            
+            setRelatedProducts(related);
+          }
+        } catch (error) {
+          console.error('Error loading product:', error);
+        } finally {
+          setLoading(false);
         }
-        
-        if (enhancedProduct.availableColors?.length) {
-          setSelectedColor(enhancedProduct.availableColors[0]);
-        }
-        
-        // Find related products (same category)
-        const related = products
-          .filter(p => p.id !== productId && p.category === enhancedProduct.category && p.status === 'Active')
-          .slice(0, 4);
-        
-        setRelatedProducts(related);
       }
     }
+    
+    loadProduct();
   }, [productId, products, getProductById]);
 
   const handleQuantityChange = (amount: number) => {
@@ -124,6 +135,14 @@ const ProductDetailPage: React.FC = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <h1 className="text-2xl font-bold mb-6">Loading product...</h1>
+      </div>
+    );
+  }
+  
   if (!product) {
     return (
       <div className="container mx-auto px-4 py-12">

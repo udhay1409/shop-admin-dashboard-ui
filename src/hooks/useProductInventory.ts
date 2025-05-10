@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
@@ -57,7 +58,7 @@ export default function useProductInventory() {
     ]);
   }, [toast]);
 
-  const getProductById = async (id: string) => {
+  const getProductById = async (id: string): Promise<Product | null> => {
     try {
       return await productService.getProductById(id);
     } catch (error) {
@@ -69,6 +70,11 @@ export default function useProductInventory() {
       });
       return null;
     }
+  };
+  
+  // Non-async version for synchronous access to products
+  const findProductById = (id: string): Product | undefined => {
+    return products.find(product => product.id === id);
   };
   
   const addProduct = async (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -138,6 +144,7 @@ export default function useProductInventory() {
     locations,
     loading,
     getProductById,
+    findProductById,
     addProduct,
     updateProduct,
     deleteProduct,

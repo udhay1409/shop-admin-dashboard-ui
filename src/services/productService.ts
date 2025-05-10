@@ -1,6 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { Product, ProductFormValues } from "@/types/product";
+import { Product, ProductFormValues, ProductStatus } from "@/types/product";
 
 export async function getProducts(): Promise<Product[]> {
   const { data, error } = await supabase
@@ -20,7 +19,7 @@ export async function getProducts(): Promise<Product[]> {
     name: item.name,
     price: Number(item.price),
     stock: item.stock,
-    status: item.status,
+    status: item.status as ProductStatus,
     category: item.category?.name || 'Uncategorized',
     image: item.image_url,
     description: item.description || '',
@@ -59,7 +58,7 @@ export async function getProductById(id: string): Promise<Product | null> {
     name: data.name,
     price: Number(data.price),
     stock: data.stock,
-    status: data.status,
+    status: data.status as ProductStatus,
     category: data.category?.name || 'Uncategorized',
     image: data.image_url,
     description: data.description || '',
@@ -121,7 +120,7 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
     name: data.name,
     price: Number(data.price),
     stock: data.stock,
-    status: data.status,
+    status: data.status as ProductStatus,
     category: data.category?.name || 'Uncategorized',
     image: data.image_url,
     description: data.description || '',
@@ -195,7 +194,7 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
     name: data.name,
     price: Number(data.price),
     stock: data.stock,
-    status: data.status,
+    status: data.status as ProductStatus,
     category: data.category?.name || 'Uncategorized',
     image: data.image_url,
     description: data.description || '',
