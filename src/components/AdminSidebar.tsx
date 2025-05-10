@@ -21,7 +21,8 @@ import {
   Warehouse,
   Boxes,
   TicketPercent,
-  MessageSquare
+  MessageSquare,
+  Layout
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -129,6 +130,11 @@ const AdminSidebar = () => {
               { to: "/customers", text: "Customers", icon: User },
               { to: "/vendors", text: "Vendors", icon: Store }
             ]}
+          />
+          <SidebarItem 
+            to="/front-store-cms" 
+            icon={Layout} 
+            text="Store CMS" 
           />
         </ul>
         
