@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +28,8 @@ import WishlistPage from './store/WishlistPage';
 import NotFound from './NotFound';
 import DynamicNavigation from '@/components/store/DynamicNavigation';
 import { useAuth } from '@/contexts/AuthContext';
+import Login from './Login';
+import Register from './Register';
 
 // Protected route component for store
 const StoreProtectedRoute = ({ children }) => {
