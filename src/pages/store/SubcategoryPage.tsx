@@ -51,7 +51,7 @@ const SubcategoryPage: React.FC = () => {
           createdAt: categoryData.created_at,
           updatedAt: categoryData.updated_at,
           parentId: categoryData.parent_id,
-          color: categoryData.color || '#EC008C',
+          color: '#EC008C', // Default color if not provided by the database
         };
         
         setCategory(formattedCategory);
@@ -82,7 +82,7 @@ const SubcategoryPage: React.FC = () => {
           createdAt: subcategoryData.created_at,
           updatedAt: subcategoryData.updated_at,
           parentId: subcategoryData.parent_id,
-          color: subcategoryData.color || '#EC008C',
+          color: '#EC008C', // Default color if not provided by the database
         };
         
         setSubcategory(formattedSubcategory);

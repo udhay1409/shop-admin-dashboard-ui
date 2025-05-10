@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Category, CategoryFormValues } from '@/types/category';
 import { toast } from '@/hooks/use-toast';
@@ -8,7 +7,7 @@ export async function getCategories(): Promise<Category[]> {
   const { data: categoriesData, error } = await supabase
     .from('categories')
     .select('*')
-    .is('parent_id', null) // Changed from .eq('parent_id', null) to .is('parent_id', null)
+    .is('parent_id', null)
     .order('name');
   
   if (error) {
@@ -29,7 +28,7 @@ export async function getSubcategories(parentId?: string): Promise<Category[]> {
   let query = supabase
     .from('categories')
     .select('*')
-    .not('parent_id', 'is', null); // Keep this as it's correct
+    .not('parent_id', 'is', null);
   
   if (parentId) {
     query = query.eq('parent_id', parentId);
@@ -64,6 +63,7 @@ export async function createCategory(categoryData: CategoryFormValues): Promise<
       status: categoryData.status,
       image_url: categoryData.imageUrl,
       parent_id: categoryData.parentId === 'none' ? null : categoryData.parentId,
+      color: categoryData.color || '#6E59A5', // Add color field to database insertion
     })
     .select()
     .single();
@@ -95,6 +95,7 @@ export async function updateCategory(id: string, categoryData: CategoryFormValue
       status: categoryData.status,
       image_url: categoryData.imageUrl,
       parent_id: categoryData.parentId === 'none' ? null : categoryData.parentId,
+      color: categoryData.color || '#6E59A5', // Add color field to database update
     })
     .eq('id', id)
     .select()
@@ -146,7 +147,7 @@ function transformDbCategory(dbCategory: any): Category {
     createdAt: dbCategory.created_at,
     updatedAt: dbCategory.updated_at,
     parentId: dbCategory.parent_id,
-    color: dbCategory.color || '#6E59A5',
+    color: dbCategory.color || '#6E59A5', // Add default color if not present in db
   };
 }
 
