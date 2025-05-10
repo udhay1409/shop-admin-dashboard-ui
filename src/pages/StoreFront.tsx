@@ -15,16 +15,15 @@ import {
   Heart,
 } from 'lucide-react';
 import AdminBar from '@/components/AdminBar';
-import { Link } from 'react-router-dom';
+import { Link, Routes, Route } from 'react-router-dom';
 import HomePage from './HomePage';
-
-const categories = [
-  "Home",
-  "Kurthi",
-  "Salwar Suits",
-  "Lehenga Cholis",
-  "Dupattas"
-];
+import CategoryPage from './store/CategoryPage';
+import SubcategoryPage from './store/SubcategoryPage';
+import ProductDetailPage from './store/ProductDetailPage';
+import CartPage from './store/CartPage';
+import CheckoutPage from './store/CheckoutPage';
+import OrderConfirmationPage from './store/OrderConfirmationPage';
+import DynamicNavigation from '@/components/store/DynamicNavigation';
 
 const StoreFront: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -85,17 +84,9 @@ const StoreFront: React.FC = () => {
               </Link>
             </div>
             
-            {/* Desktop Navigation */}
+            {/* Desktop Navigation - Using Dynamic Categories */}
             <nav className="hidden md:flex items-center space-x-8">
-              {categories.map(category => (
-                <Link 
-                  key={category} 
-                  to={`/store/categories/${category.toLowerCase()}`}
-                  className={`text-sm hover:text-[#EC008C] transition-colors ${category === 'Kurthi' ? 'text-[#EC008C] font-medium' : ''}`}
-                >
-                  {category}
-                </Link>
-              ))}
+              <DynamicNavigation />
             </nav>
             
             {/* Icons */}
@@ -168,7 +159,7 @@ const StoreFront: React.FC = () => {
         </div>
       </header>
       
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Dynamic Categories */}
       <div className={`fixed inset-0 bg-white z-40 transition-transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex justify-between items-center h-16 px-4 border-b">
           <h1 className="text-xl font-script font-bold text-[#EC008C]">Fashiona</h1>
@@ -183,17 +174,51 @@ const StoreFront: React.FC = () => {
         
         <div className="p-4">
           <nav className="space-y-4">
-            {categories.map(category => (
-              <Link 
-                key={category}
-                to={`/store/categories/${category.toLowerCase()}`}
-                className="flex items-center justify-between py-2 border-b"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <span>{category}</span>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
-              </Link>
-            ))}
+            <Link 
+              to="/store"
+              className="flex items-center justify-between py-2 border-b"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span>Home</span>
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </Link>
+            
+            {/* These categories would be dynamically generated in a real app */}
+            <Link 
+              to="/store/categories/kurthi"
+              className="flex items-center justify-between py-2 border-b"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span>Kurthi</span>
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </Link>
+            
+            <Link 
+              to="/store/categories/salwar-suits"
+              className="flex items-center justify-between py-2 border-b"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span>Salwar Suits</span>
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </Link>
+            
+            <Link 
+              to="/store/categories/lehenga-cholis"
+              className="flex items-center justify-between py-2 border-b"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span>Lehenga Cholis</span>
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </Link>
+            
+            <Link 
+              to="/store/categories/dupattas"
+              className="flex items-center justify-between py-2 border-b"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span>Dupattas</span>
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </Link>
           </nav>
           
           <div className="mt-8 space-y-4">
@@ -219,9 +244,18 @@ const StoreFront: React.FC = () => {
         </div>
       </div>
       
-      {/* Main Content */}
+      {/* Main Content - Routes */}
       <main className="flex-grow">
-        <HomePage />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/categories/:categorySlug" element={<CategoryPage />} />
+          <Route path="/categories/:categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
+          <Route path="/product/:productId" element={<ProductDetailPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+          {/* Add more routes as needed */}
+        </Routes>
       </main>
       
       {/* Footer */}

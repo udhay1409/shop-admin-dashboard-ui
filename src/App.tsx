@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AdminLayout from "./components/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
@@ -24,6 +23,8 @@ import Settings from "./pages/Settings";
 import TransactionLogs from "./pages/TransactionLogs";
 import POS from "./pages/POS";
 import StoreFront from "./pages/StoreFront";
+import Subcategories from "./pages/Subcategories";
+import HomePage from "./pages/HomePage";
 
 const queryClient = new QueryClient();
 
@@ -57,16 +58,23 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
+function App() {
+  return (
+    <Router>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <Routes>
           {/* Store Frontend */}
-          <Route path="/store" element={<StoreFront />} />
-          <Route path="/store/*" element={<StoreFront />} />
+          <Route path="/store" element={<StoreFront />}>
+            <Route index element={<HomePage />} />
+          </Route>
+          <Route path="/store/categories/:categorySlug" element={<StoreFront />} />
+          <Route path="/store/categories/:categorySlug/:subcategorySlug" element={<StoreFront />} />
+          <Route path="/store/product/:productId" element={<StoreFront />} />
+          <Route path="/store/cart" element={<StoreFront />} />
+          <Route path="/store/checkout" element={<StoreFront />} />
+          <Route path="/store/order-confirmation" element={<StoreFront />} />
 
           {/* Authentication routes */}
           <Route path="/login" element={<Login />} />
@@ -83,6 +91,7 @@ const App = () => (
             <Route path="orders" element={<Orders />} />
             <Route path="products" element={<Products />} />
             <Route path="categories" element={<Categories />} />
+            <Route path="subcategories" element={<Subcategories />} />
             <Route path="reports" element={<Reports />} />
             <Route path="delivery" element={<Delivery />} />
             <Route path="customers" element={<Customers />} />
@@ -99,8 +108,8 @@ const App = () => (
           </Route>
         </Routes>
       </TooltipProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+    </Router>
+  );
+}
 
 export default App;
