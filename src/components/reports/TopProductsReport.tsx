@@ -1,234 +1,159 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-
-// Sample product report data
-const productPerformance = [
-  {
-    id: '1',
-    name: 'Men Grey Hoodie',
-    category: 'Hoodies',
-    sku: 'MH-001',
-    unitsSold: 204,
-    revenue: 10180,
-    profit: 3054,
-    stockStatus: 'In Stock',
-    stockLevel: 45,
-  },
-  {
-    id: '2',
-    name: 'Women Striped T-Shirt',
-    category: 'T-Shirts',
-    sku: 'WT-112',
-    unitsSold: 155,
-    revenue: 5410,
-    profit: 2164,
-    stockStatus: 'Low Stock',
-    stockLevel: 8,
-  },
-  {
-    id: '3',
-    name: 'Women White T-Shirt',
-    category: 'T-Shirts',
-    sku: 'WT-103',
-    unitsSold: 120,
-    revenue: 4908,
-    profit: 1472,
-    stockStatus: 'In Stock',
-    stockLevel: 32,
-  },
-  {
-    id: '4',
-    name: 'Men White T-Shirt',
-    category: 'T-Shirts',
-    sku: 'MT-201',
-    unitsSold: 109,
-    revenue: 5440,
-    profit: 1632,
-    stockStatus: 'Out of Stock',
-    stockLevel: 0,
-  },
-  {
-    id: '5',
-    name: 'Women Black Jeans',
-    category: 'Jeans',
-    sku: 'WJ-505',
-    unitsSold: 95,
-    revenue: 6650,
-    profit: 1995,
-    stockStatus: 'In Stock',
-    stockLevel: 22,
-  }
-];
-
-// Sample category performance data
-const categoryPerformance = [
-  { 
-    category: 'T-Shirts',
-    unitsSold: 384,
-    revenue: 15758,
-    profit: 5268,
-    growthRate: 12.5
-  },
-  {
-    category: 'Hoodies',
-    unitsSold: 304,
-    revenue: 15200,
-    profit: 4560,
-    growthRate: 8.3
-  },
-  {
-    category: 'Jeans',
-    unitsSold: 183,
-    revenue: 12810,
-    profit: 3843,
-    growthRate: 5.7
-  },
-  {
-    category: 'Dresses',
-    unitsSold: 124,
-    revenue: 9920,
-    profit: 3976,
-    growthRate: -3.2
-  },
-];
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell 
+} from 'recharts';
+import { getTopProducts } from '@/services/reportService';
+import { useToast } from '@/hooks/use-toast';
 
 interface TopProductsReportProps {
   dateRange: {
-    from: Date | undefined;
-    to: Date | undefined;
+    from?: Date;
+    to?: Date;
   };
 }
 
-const TopProductsReport: React.FC<TopProductsReportProps> = ({ dateRange }) => {
-  // Function to determine stock status badge color
-  const getStockStatusBadge = (status: string) => {
-    switch (status) {
-      case 'In Stock':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">In Stock</Badge>;
-      case 'Low Stock':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50">Low Stock</Badge>;
-      case 'Out of Stock':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">Out of Stock</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
-  // Function to render growth rate with appropriate color
-  const renderGrowthRate = (rate: number) => {
-    const isPositive = rate >= 0;
+const TopProductsReport: React.FC<TopProductsReportProps> = ({ dateRange }) => {
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchTopProducts = async () => {
+      try {
+        setIsLoading(true);
+        const products = await getTopProducts();
+        setTopProducts(products);
+      } catch (error) {
+        console.error('Error fetching top products:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load top products data',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchTopProducts();
+  }, [dateRange, toast]);
+
+  // Prepare data for charts
+  const barChartData = topProducts.map(product => ({
+    name: product.name.length > 15 ? product.name.substring(0, 15) + '...' : product.name,
+    units: product.unitsSold
+  }));
+
+  const pieChartData = topProducts.map(product => ({
+    name: product.name,
+    value: product.unitsSold
+  }));
+
+  if (isLoading) {
     return (
-      <div className={`flex items-center ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-        {isPositive ? '+' : ''}{rate}%
+      <div className="space-y-6">
+        {[1, 2].map((i) => (
+          <Card key={i} className="animate-pulse">
+            <CardContent className="p-6 h-80">
+              <div className="w-full h-full bg-gray-200 rounded"></div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
-  };
+  }
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Top Products Performance</CardTitle>
-          <CardDescription>
-            {dateRange.from && dateRange.to
-              ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
-              : 'All time product performance'}
-          </CardDescription>
+          <CardTitle>Units Sold by Product</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Units Sold</TableHead>
-                <TableHead className="text-right">Revenue</TableHead>
-                <TableHead>Stock Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {productPerformance.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell className="text-right">{product.unitsSold}</TableCell>
-                  <TableCell className="text-right">${product.revenue.toLocaleString()}</TableCell>
-                  <TableCell>{getStockStatusBadge(product.stockStatus)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="pt-0">
+          <div className="h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={barChartData}
+                margin={{
+                  top: 20,
+                  right: 30,
+                  left: 20,
+                  bottom: 60,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" angle={-45} textAnchor="end" height={70} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="units" name="Units Sold" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Category Performance</CardTitle>
-          <CardDescription>Sales and growth by product category</CardDescription>
+          <CardTitle>Sales Distribution</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Units Sold</TableHead>
-                <TableHead className="text-right">Revenue</TableHead>
-                <TableHead className="text-right">Profit</TableHead>
-                <TableHead>Growth Rate</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {categoryPerformance.map((category) => (
-                <TableRow key={category.category}>
-                  <TableCell className="font-medium">{category.category}</TableCell>
-                  <TableCell className="text-right">{category.unitsSold}</TableCell>
-                  <TableCell className="text-right">${category.revenue.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">${category.profit.toLocaleString()}</TableCell>
-                  <TableCell>{renderGrowthRate(category.growthRate)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="pt-0">
+          <div className="h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={150}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {pieChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => [`${value} units`, 'Units Sold']} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
-          <CardTitle>Inventory Status</CardTitle>
-          <CardDescription>Current product stock levels</CardDescription>
+          <CardTitle>Top Selling Products</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {productPerformance.map((product) => (
-              <div key={product.id} className="grid grid-cols-6 gap-4 items-center">
-                <div className="col-span-2 font-medium">{product.name}</div>
-                <div className="col-span-3">
-                  <Progress 
-                    value={product.stockLevel} 
-                    max={100} 
-                    className={`h-2 ${
-                      product.stockLevel === 0 ? 'bg-red-100' : 
-                      product.stockLevel < 10 ? 'bg-yellow-100' : 
-                      'bg-green-100'
-                    }`}
-                  />
-                </div>
-                <div className="text-right text-sm text-gray-500">
-                  {product.stockLevel} units
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="py-2 text-left">Rank</th>
+                  <th className="py-2 text-left">Product</th>
+                  <th className="py-2 text-left">Price</th>
+                  <th className="py-2 text-left">Units Sold</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topProducts.map((product, index) => (
+                  <tr key={product.id} className="border-b">
+                    <td className="py-2">{index + 1}</td>
+                    <td className="py-2">{product.name}</td>
+                    <td className="py-2">{product.price}</td>
+                    <td className="py-2">{product.unitsSold}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search,
   Filter, 
@@ -48,84 +48,8 @@ import { ReviewStatus, Review } from '@/types/review';
 import { ReviewDetails } from '@/components/reviews/ReviewDetails';
 import { ReplyToReview } from '@/components/reviews/ReplyToReview';
 import { ReviewStats } from '@/components/reviews/ReviewStats';
-
-// Mock data for the reviews
-const mockReviews: Review[] = [
-  {
-    id: "1",
-    productId: "p1",
-    productName: "Elegant Summer Dress",
-    customerId: "c1",
-    customerName: "Jane Smith",
-    rating: 5,
-    title: "Absolutely love this dress!",
-    comment: "This dress is perfect for summer. The fabric is breathable and the fit is exactly as described. I've received so many compliments!",
-    status: "published",
-    helpful: 12,
-    createdAt: "2025-04-28T14:12:00Z",
-    updatedAt: "2025-04-28T14:12:00Z"
-  },
-  {
-    id: "2",
-    productId: "p2",
-    productName: "Classic Denim Jacket",
-    customerId: "c2",
-    customerName: "Michael Johnson",
-    rating: 4,
-    title: "Great jacket, slightly large",
-    comment: "Quality material and stylish design. Just a bit bigger than I expected.",
-    status: "published",
-    helpful: 5,
-    createdAt: "2025-04-25T09:30:00Z",
-    updatedAt: "2025-04-25T09:30:00Z"
-  },
-  {
-    id: "3",
-    productId: "p3",
-    productName: "Leather Ankle Boots",
-    customerId: "c3",
-    customerName: "Emily Davis",
-    rating: 2,
-    title: "Disappointed with quality",
-    comment: "These boots started falling apart after just two weeks of normal use. The stitching came undone and the sole is already separating.",
-    status: "pending",
-    reportCount: 1,
-    createdAt: "2025-05-01T16:45:00Z",
-    updatedAt: "2025-05-01T16:45:00Z"
-  },
-  {
-    id: "4",
-    productId: "p4",
-    productName: "Silk Blouse",
-    customerId: "c4",
-    customerName: "Sarah Williams",
-    rating: 5,
-    title: "Elegant and high quality",
-    comment: "This blouse is absolutely stunning. The silk is high quality and it drapes beautifully. Worth every penny!",
-    status: "published",
-    helpful: 18,
-    createdAt: "2025-04-20T11:23:00Z",
-    updatedAt: "2025-04-20T11:23:00Z",
-    reply: {
-      message: "Thank you for your kind words! We're glad you're enjoying your purchase.",
-      createdAt: "2025-04-21T09:15:00Z"
-    }
-  },
-  {
-    id: "5",
-    productId: "p1",
-    productName: "Elegant Summer Dress",
-    customerId: "c5",
-    customerName: "Anna Brown",
-    rating: 1,
-    title: "Terrible quality",
-    comment: "The dress arrived with loose threads and a broken zipper. Very disappointed with the quality for the price.",
-    status: "rejected",
-    reportCount: 0,
-    createdAt: "2025-05-03T13:17:00Z",
-    updatedAt: "2025-05-04T10:22:00Z"
-  }
-];
+import { getReviews, saveReviewReply, updateReviewStatus } from '@/services/reviewService';
+import { useToast } from '@/hooks/use-toast';
 
 const Reviews: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -135,9 +59,33 @@ const Reviews: React.FC = () => {
   const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [sortField, setSortField] = useState<"date" | "rating">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
   
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setLoading(true);
+        const data = await getReviews();
+        setReviews(data);
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load reviews',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchReviews();
+  }, [toast]);
+
   // Filter and sort reviews
-  const filteredReviews = mockReviews.filter(review => {
+  const filteredReviews = reviews.filter(review => {
     // Status filter
     if (statusFilter !== "all" && review.status !== statusFilter) return false;
     
@@ -149,8 +97,8 @@ const Reviews: React.FC = () => {
     return (
       review.customerName.toLowerCase().includes(searchLower) ||
       review.productName.toLowerCase().includes(searchLower) ||
-      review.title.toLowerCase().includes(searchLower) ||
-      review.comment.toLowerCase().includes(searchLower)
+      (review.title && review.title.toLowerCase().includes(searchLower)) ||
+      (review.comment && review.comment.toLowerCase().includes(searchLower))
     );
   }).sort((a, b) => {
     if (sortField === "date") {
@@ -179,15 +127,47 @@ const Reviews: React.FC = () => {
     setIsReplyOpen(true);
   };
 
-  const handleSaveReply = (reviewId: string, replyText: string) => {
-    console.log(`Reply to review ${reviewId}: ${replyText}`);
-    // In a real app, you would save the reply to the backend here
-    setIsReplyOpen(false);
+  const handleSaveReply = async (reviewId: string, replyText: string) => {
+    try {
+      await saveReviewReply(reviewId, replyText);
+      toast({
+        title: 'Reply Saved',
+        description: 'Your reply has been saved successfully',
+      });
+      
+      // Refresh the reviews list
+      const updatedReviews = await getReviews();
+      setReviews(updatedReviews);
+      setIsReplyOpen(false);
+    } catch (error) {
+      console.error('Error saving reply:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save your reply',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleStatusChange = (reviewId: string, newStatus: ReviewStatus) => {
-    console.log(`Changed status of review ${reviewId} to ${newStatus}`);
-    // In a real app, you would update the status in the backend
+  const handleStatusChange = async (reviewId: string, newStatus: ReviewStatus) => {
+    try {
+      await updateReviewStatus(reviewId, newStatus);
+      toast({
+        title: 'Status Updated',
+        description: `Review status has been changed to ${newStatus}`,
+      });
+      
+      // Update the reviews list
+      const updatedReviews = await getReviews();
+      setReviews(updatedReviews);
+    } catch (error) {
+      console.error('Error updating review status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update review status',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getStatusBadge = (status: ReviewStatus) => {
@@ -230,7 +210,7 @@ const Reviews: React.FC = () => {
         </div>
       </div>
 
-      <ReviewStats reviews={mockReviews} />
+      <ReviewStats reviews={reviews} />
       
       <Card>
         <CardHeader className="pb-2">
@@ -275,107 +255,113 @@ const Reviews: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <div className="bg-muted/50 p-4 grid grid-cols-12 font-medium text-sm">
-              <div className="col-span-3">
-                <button 
-                  onClick={() => toggleSort("date")}
-                  className="inline-flex items-center hover:text-foreground"
-                >
-                  Date
-                  {sortField === "date" ? (
-                    sortDirection === "asc" ? (
-                      <ChevronUp className="ml-1 h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="ml-1 h-4 w-4" />
-                    )
-                  ) : null}
-                </button>
-              </div>
-              <div className="col-span-2">
-                <button 
-                  onClick={() => toggleSort("rating")}
-                  className="inline-flex items-center hover:text-foreground"
-                >
-                  Rating
-                  {sortField === "rating" ? (
-                    sortDirection === "asc" ? (
-                      <ChevronUp className="ml-1 h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="ml-1 h-4 w-4" />
-                    )
-                  ) : null}
-                </button>
-              </div>
-              <div className="col-span-3">Product</div>
-              <div className="col-span-2">Status</div>
-              <div className="col-span-2 text-right">Actions</div>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#EC008C] border-t-transparent"></div>
             </div>
-            {filteredReviews.length > 0 ? (
-              <div>
-                {filteredReviews.map((review) => (
-                  <div 
-                    key={review.id} 
-                    className="grid grid-cols-12 p-4 items-center border-t"
+          ) : (
+            <div className="rounded-md border">
+              <div className="bg-muted/50 p-4 grid grid-cols-12 font-medium text-sm">
+                <div className="col-span-3">
+                  <button 
+                    onClick={() => toggleSort("date")}
+                    className="inline-flex items-center hover:text-foreground"
                   >
-                    <div className="col-span-3">
-                      <div>{format(new Date(review.createdAt), 'MMM dd, yyyy')}</div>
-                      <div className="text-sm text-muted-foreground">{review.customerName}</div>
-                    </div>
-                    <div className="col-span-2">
-                      {renderStars(review.rating)}
-                    </div>
-                    <div className="col-span-3">
-                      <div className="font-medium">{review.productName}</div>
-                      <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {review.title}
+                    Date
+                    {sortField === "date" ? (
+                      sortDirection === "asc" ? (
+                        <ChevronUp className="ml-1 h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="ml-1 h-4 w-4" />
+                      )
+                    ) : null}
+                  </button>
+                </div>
+                <div className="col-span-2">
+                  <button 
+                    onClick={() => toggleSort("rating")}
+                    className="inline-flex items-center hover:text-foreground"
+                  >
+                    Rating
+                    {sortField === "rating" ? (
+                      sortDirection === "asc" ? (
+                        <ChevronUp className="ml-1 h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="ml-1 h-4 w-4" />
+                      )
+                    ) : null}
+                  </button>
+                </div>
+                <div className="col-span-3">Product</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-2 text-right">Actions</div>
+              </div>
+              {filteredReviews.length > 0 ? (
+                <div>
+                  {filteredReviews.map((review) => (
+                    <div 
+                      key={review.id} 
+                      className="grid grid-cols-12 p-4 items-center border-t"
+                    >
+                      <div className="col-span-3">
+                        <div>{format(new Date(review.createdAt), 'MMM dd, yyyy')}</div>
+                        <div className="text-sm text-muted-foreground">{review.customerName}</div>
+                      </div>
+                      <div className="col-span-2">
+                        {renderStars(review.rating)}
+                      </div>
+                      <div className="col-span-3">
+                        <div className="font-medium">{review.productName}</div>
+                        <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                          {review.title}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        {getStatusBadge(review.status)}
+                      </div>
+                      <div className="col-span-2 text-right space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setSelectedReview(review)}
+                        >
+                          View
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <span className="sr-only">Actions</span>
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenReply(review)}>
+                              <MessageCircle className="mr-2 h-4 w-4" />
+                              Reply
+                            </DropdownMenuItem>
+                            {review.status !== "published" && (
+                              <DropdownMenuItem onClick={() => handleStatusChange(review.id, "published")}>
+                                Approve
+                              </DropdownMenuItem>
+                            )}
+                            {review.status !== "rejected" && (
+                              <DropdownMenuItem onClick={() => handleStatusChange(review.id, "rejected")}>
+                                Reject
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
-                    <div className="col-span-2">
-                      {getStatusBadge(review.status)}
-                    </div>
-                    <div className="col-span-2 text-right space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setSelectedReview(review)}
-                      >
-                        View
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <span className="sr-only">Actions</span>
-                            <ChevronDown className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenReply(review)}>
-                            <MessageCircle className="mr-2 h-4 w-4" />
-                            Reply
-                          </DropdownMenuItem>
-                          {review.status !== "published" && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(review.id, "published")}>
-                              Approve
-                            </DropdownMenuItem>
-                          )}
-                          {review.status !== "rejected" && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(review.id, "rejected")}>
-                              Reject
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-4 text-center text-muted-foreground">
-                No reviews match your filters
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center text-muted-foreground">
+                  No reviews match your filters
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
         <CardFooter>
           <Pagination>

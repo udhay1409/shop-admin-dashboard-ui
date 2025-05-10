@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Receipt, FileText, CreditCard } from "lucide-react";
 import TransactionDetailModal from '@/components/transactions/TransactionDetailModal';
 import { useQuery } from '@tanstack/react-query';
+import { fetchTransactions } from '@/services/transactionService';
 
 // Define transaction type
 interface Transaction {
@@ -54,87 +55,6 @@ interface TransactionsResponse {
   transactions: Transaction[];
   total: number;
 }
-
-// Mock data for transactions - would be replaced with actual Razorpay API call
-const fetchTransactions = async (): Promise<TransactionsResponse> => {
-  // In a real app, this would call the Razorpay API
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        transactions: [
-          { 
-            id: 'pay_LMN5678OPQ', 
-            orderId: 'order_123456', 
-            amount: 4999, 
-            status: 'captured',
-            method: 'card',
-            email: 'john.doe@example.com',
-            contact: '+919876543210',
-            created: new Date('2025-05-05T14:32:10'),
-            card: {
-              last4: '1234',
-              network: 'Visa',
-            }
-          },
-          { 
-            id: 'pay_ABC1234DEF', 
-            orderId: 'order_654321', 
-            amount: 2499, 
-            status: 'authorized',
-            method: 'upi',
-            email: 'jane.smith@example.com',
-            contact: '+919876543211',
-            created: new Date('2025-05-04T09:15:22'),
-            upi: {
-              vpa: 'jane.smith@upi'
-            }
-          },
-          { 
-            id: 'pay_GHI9012JKL', 
-            orderId: 'order_789012', 
-            amount: 7999, 
-            status: 'failed',
-            method: 'netbanking',
-            email: 'alex.wong@example.com',
-            contact: '+919876543212',
-            created: new Date('2025-05-03T18:45:30'),
-            bank: {
-              name: 'HDFC'
-            }
-          },
-          { 
-            id: 'pay_RST3456UVW', 
-            orderId: 'order_345678', 
-            amount: 1099, 
-            status: 'refunded',
-            method: 'wallet',
-            email: 'priya.patel@example.com',
-            contact: '+919876543213',
-            created: new Date('2025-05-02T11:20:15'),
-            wallet: {
-              name: 'Paytm'
-            }
-          },
-          { 
-            id: 'pay_XYZ7890ABC', 
-            orderId: 'order_901234', 
-            amount: 3499, 
-            status: 'captured',
-            method: 'card',
-            email: 'mike.jones@example.com',
-            contact: '+919876543214',
-            created: new Date('2025-05-01T16:05:50'),
-            card: {
-              last4: '5678',
-              network: 'Mastercard',
-            }
-          }
-        ],
-        total: 157
-      });
-    }, 1000);
-  });
-};
 
 const TransactionLogs: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -273,7 +193,7 @@ const TransactionLogs: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing <span className="font-medium">1</span> to <span className="font-medium">5</span> of <span className="font-medium">{data?.total || 0}</span> transactions
+              Showing <span className="font-medium">1</span> to <span className="font-medium">{data?.transactions.length || 0}</span> of <span className="font-medium">{data?.total || 0}</span> transactions
             </div>
             <Pagination>
               <PaginationContent>

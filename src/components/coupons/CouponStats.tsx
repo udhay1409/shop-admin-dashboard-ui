@@ -1,62 +1,90 @@
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TicketPercent, Users, ShoppingBag, Tag } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Ticket, CheckCircle, AlertCircle, BarChart } from 'lucide-react';
+import { getCouponStats } from '@/services/couponService';
 
 const CouponStats = () => {
+  const [stats, setStats] = useState({
+    totalCoupons: 0,
+    activeCoupons: 0,
+    expiredCoupons: 0,
+    redemptionsCount: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        setIsLoading(true);
+        const couponStats = await getCouponStats();
+        setStats(couponStats);
+      } catch (error) {
+        console.error('Error loading coupon stats:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadStats();
+  }, []);
+
+  const statCards = [
+    {
+      title: 'Total Coupons',
+      value: stats.totalCoupons,
+      icon: <Ticket className="h-8 w-8 text-pink-500" />,
+      color: 'bg-pink-100',
+    },
+    {
+      title: 'Active Coupons',
+      value: stats.activeCoupons,
+      icon: <CheckCircle className="h-8 w-8 text-green-500" />,
+      color: 'bg-green-100',
+    },
+    {
+      title: 'Expired Coupons',
+      value: stats.expiredCoupons,
+      icon: <AlertCircle className="h-8 w-8 text-orange-500" />,
+      color: 'bg-orange-100',
+    },
+    {
+      title: 'Total Redemptions',
+      value: stats.redemptionsCount,
+      icon: <BarChart className="h-8 w-8 text-blue-500" />,
+      color: 'bg-blue-100',
+    },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((index) => (
+          <Card key={index} className="animate-pulse">
+            <CardContent className="p-6 h-24 flex items-center justify-center">
+              <div className="w-full h-full bg-gray-200 rounded"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Coupons</CardTitle>
-          <TicketPercent className="h-4 w-4 text-pink-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">24</div>
-          <p className="text-xs text-muted-foreground">
-            +2 from last month
-          </p>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Redemptions</CardTitle>
-          <Tag className="h-4 w-4 text-pink-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">1,453</div>
-          <p className="text-xs text-muted-foreground">
-            +24% from last month
-          </p>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Discount Amount</CardTitle>
-          <ShoppingBag className="h-4 w-4 text-pink-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">$12,543.00</div>
-          <p className="text-xs text-muted-foreground">
-            +12% from last month
-          </p>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Unique Users</CardTitle>
-          <Users className="h-4 w-4 text-pink-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">853</div>
-          <p className="text-xs text-muted-foreground">
-            +10% from last month
-          </p>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {statCards.map((stat, index) => (
+        <Card key={index}>
+          <CardContent className="p-6 flex items-center space-x-4">
+            <div className={`rounded-full p-3 ${stat.color}`}>
+              {stat.icon}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+              <h4 className="text-2xl font-bold">{stat.value}</h4>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };
