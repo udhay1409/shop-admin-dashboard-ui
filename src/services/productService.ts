@@ -31,7 +31,13 @@ export async function getProducts(): Promise<Product[]> {
     isNew: item.is_new,
     isSale: item.is_sale,
     trending: item.trending,
-    hotSelling: item.hot_selling
+    hotSelling: item.hot_selling,
+    subcategory: item.subcategory || '',
+    availableSizes: item.available_sizes,
+    availableColors: item.available_colors,
+    bulkDiscountQuantity: item.bulk_discount_quantity,
+    bulkDiscountPercentage: item.bulk_discount_percentage,
+    additionalImages: item.additional_images
   }));
 }
 
@@ -70,7 +76,13 @@ export async function getProductById(id: string): Promise<Product | null> {
     isNew: data.is_new,
     isSale: data.is_sale,
     trending: data.trending,
-    hotSelling: data.hot_selling
+    hotSelling: data.hot_selling,
+    subcategory: data.subcategory || '',
+    availableSizes: data.available_sizes,
+    availableColors: data.available_colors,
+    bulkDiscountQuantity: data.bulk_discount_quantity,
+    bulkDiscountPercentage: data.bulk_discount_percentage,
+    additionalImages: data.additional_images
   };
 }
 
@@ -102,7 +114,13 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
       is_new: productData.isNew || false,
       is_sale: productData.isSale || false,
       trending: productData.trending || false,
-      hot_selling: productData.hotSelling || false
+      hot_selling: productData.hotSelling || false,
+      subcategory: productData.subcategory || null,
+      available_sizes: productData.availableSizes || null,
+      available_colors: productData.availableColors || null,
+      bulk_discount_quantity: productData.bulkDiscountQuantity || null,
+      bulk_discount_percentage: productData.bulkDiscountPercentage || null,
+      additional_images: productData.additionalImages || null
     })
     .select(`
       *,
@@ -132,7 +150,13 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
     isNew: data.is_new,
     isSale: data.is_sale,
     trending: data.trending,
-    hotSelling: data.hot_selling
+    hotSelling: data.hot_selling,
+    subcategory: data.subcategory || '',
+    availableSizes: data.available_sizes,
+    availableColors: data.available_colors,
+    bulkDiscountQuantity: data.bulk_discount_quantity,
+    bulkDiscountPercentage: data.bulk_discount_percentage,
+    additionalImages: data.additional_images
   };
 }
 
@@ -173,6 +197,12 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
   if (productData.isSale !== undefined) updateData.is_sale = productData.isSale;
   if (productData.trending !== undefined) updateData.trending = productData.trending;
   if (productData.hotSelling !== undefined) updateData.hot_selling = productData.hotSelling;
+  if (productData.subcategory !== undefined) updateData.subcategory = productData.subcategory;
+  if (productData.availableSizes !== undefined) updateData.available_sizes = productData.availableSizes;
+  if (productData.availableColors !== undefined) updateData.available_colors = productData.availableColors;
+  if (productData.bulkDiscountQuantity !== undefined) updateData.bulk_discount_quantity = productData.bulkDiscountQuantity;
+  if (productData.bulkDiscountPercentage !== undefined) updateData.bulk_discount_percentage = productData.bulkDiscountPercentage;
+  if (productData.additionalImages !== undefined) updateData.additional_images = productData.additionalImages;
 
   const { data, error } = await supabase
     .from('products')
@@ -206,7 +236,13 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
     isNew: data.is_new,
     isSale: data.is_sale,
     trending: data.trending,
-    hotSelling: data.hot_selling
+    hotSelling: data.hot_selling,
+    subcategory: data.subcategory || '',
+    availableSizes: data.available_sizes,
+    availableColors: data.available_colors,
+    bulkDiscountQuantity: data.bulk_discount_quantity,
+    bulkDiscountPercentage: data.bulk_discount_percentage,
+    additionalImages: data.additional_images
   };
 }
 
@@ -232,6 +268,28 @@ export async function getCategories(): Promise<{id: string, name: string}[]> {
   
   if (error) {
     console.error('Error fetching categories:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function getSubcategories(categoryId?: string): Promise<{id: string, name: string}[]> {
+  let query = supabase
+    .from('categories')
+    .select('id, name')
+    .eq('status', 'Active');
+  
+  if (categoryId) {
+    query = query.eq('parent_id', categoryId);
+  } else {
+    query = query.not('parent_id', 'is', null);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    console.error('Error fetching subcategories:', error);
     throw error;
   }
 

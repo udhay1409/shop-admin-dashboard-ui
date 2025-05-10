@@ -26,6 +26,9 @@ export interface Product {
   discountPercentage?: number;
   trending?: boolean;
   hotSelling?: boolean;
+  bulkDiscountQuantity?: number;
+  bulkDiscountPercentage?: number;
+  additionalImages?: string[];
 }
 
 export interface ProductFormValues {
@@ -35,13 +38,13 @@ export interface ProductFormValues {
   stock: number;
   status: ProductStatus;
   category: string;
+  subcategory?: string;
   image?: string;
   description?: string;
   sku?: string;
   availableSizes?: ProductSize[];
   availableColors?: ProductColor[];
   originalPrice?: number;
-  subcategory?: string;
   rating?: number;
   reviews?: number;
   isNew?: boolean;
@@ -49,4 +52,7 @@ export interface ProductFormValues {
   discountPercentage?: number;
   trending?: boolean;
   hotSelling?: boolean;
+  bulkDiscountQuantity?: number;
+  bulkDiscountPercentage?: number;
+  additionalImages?: string[];
 }
