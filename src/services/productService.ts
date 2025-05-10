@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Product, ProductFormValues, ProductStatus } from "@/types/product";
 
@@ -103,7 +102,7 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
     console.error('Error finding category:', categoryError);
   }
 
-  // Map our form fields to database column names
+  // Map our form fields to database column names, only including fields that exist in the database
   const { data, error } = await supabase
     .from('products')
     .insert({
@@ -121,14 +120,8 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
       is_sale: productData.isSale || false,
       trending: productData.trending || false,
       hot_selling: productData.hotSelling || false,
-      // We'll still send these fields in case the database is updated in the future
-      // Note: These will be ignored by Supabase if the columns don't exist
-      subcategory: productData.subcategory || null,
-      available_sizes: productData.availableSizes || [],
-      available_colors: productData.availableColors || [],
-      bulk_discount_quantity: productData.bulkDiscountQuantity || null,
-      bulk_discount_percentage: productData.bulkDiscountPercentage || null,
-      additional_images: productData.additionalImages || []
+      // Removed fields that don't exist in the database:
+      // subcategory, available_sizes, available_colors, bulk_discount_quantity, bulk_discount_percentage, additional_images
     })
     .select(`
       *,
@@ -192,7 +185,7 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
     updated_at: new Date().toISOString()
   };
   
-  // Map our form fields to database column names
+  // Map our form fields to database column names - only include fields that exist in the database
   if (productData.name !== undefined) updateData.name = productData.name;
   if (productData.price !== undefined) updateData.price = productData.price;
   if (productData.stock !== undefined) updateData.stock = productData.stock;
@@ -208,14 +201,7 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
   if (productData.trending !== undefined) updateData.trending = productData.trending;
   if (productData.hotSelling !== undefined) updateData.hot_selling = productData.hotSelling;
   
-  // We'll still include these updates in case the database is updated in the future
-  // Note: These will be ignored by Supabase if the columns don't exist
-  if (productData.subcategory !== undefined) updateData.subcategory = productData.subcategory;
-  if (productData.availableSizes !== undefined) updateData.available_sizes = productData.availableSizes;
-  if (productData.availableColors !== undefined) updateData.available_colors = productData.availableColors;
-  if (productData.bulkDiscountQuantity !== undefined) updateData.bulk_discount_quantity = productData.bulkDiscountQuantity;
-  if (productData.bulkDiscountPercentage !== undefined) updateData.bulk_discount_percentage = productData.bulkDiscountPercentage;
-  if (productData.additionalImages !== undefined) updateData.additional_images = productData.additionalImages;
+  // Removed fields that don't exist in the database
 
   const { data, error } = await supabase
     .from('products')
