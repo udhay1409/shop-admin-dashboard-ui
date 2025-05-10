@@ -25,6 +25,7 @@ import POS from "./pages/POS";
 import StoreFront from "./pages/StoreFront";
 import Subcategories from "./pages/Subcategories";
 import HomePage from "./pages/HomePage";
+import Contact from "./pages/Contact"; // Import the Contact page
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useEffect } from "react";
 import { supabase } from "./integrations/supabase/client";
@@ -138,7 +139,7 @@ const AppWithAuth = () => {
           <Route path="settings" element={<Settings />} />
           <Route path="transaction-logs" element={<TransactionLogs />} />
           <Route path="pos" element={<POS />} />
-          <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
+          <Route path="contact" element={<Contact />} /> {/* Added Contact page route */}
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="*" element={<NotFound />} />
