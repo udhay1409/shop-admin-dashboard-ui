@@ -118,13 +118,17 @@ async function addOrderStatusHistory(
   status: OrderStatus, 
   notes?: string
 ): Promise<void> {
+  // Get the current user
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData?.user?.id || null;
+  
   const { error } = await supabase
     .from('order_status_history')
     .insert({
       order_id: orderId,
       status,
       notes,
-      created_by: supabase.auth.getUser().then(res => res.data.user?.id) || null
+      created_by: userId // Use the user ID directly, not a Promise
     });
   
   if (error) {
