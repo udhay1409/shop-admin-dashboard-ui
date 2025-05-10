@@ -104,12 +104,18 @@ const ReportDateRangePicker: React.FC<ReportDateRangePickerProps> = ({ value, on
           mode="range"
           defaultMonth={value?.from}
           selected={{ from: value?.from, to: value?.to }}
-          onSelect={(selectedRange: DayPickerDateRange | undefined) => {
-            // Convert the react-day-picker DateRange to our DateRange
-            const range: DateRange = selectedRange || { from: undefined, to: undefined };
-            onChange(range);
-            if (range.from && range.to) {
-              setIsOpen(false);
+          onSelect={(selectedRange) => {
+            // Handle the type conversion safely
+            if (selectedRange) {
+              // Explicitly extract from and to to ensure type compatibility
+              const { from, to } = selectedRange;
+              onChange({ from, to });
+              
+              if (from && to) {
+                setIsOpen(false);
+              }
+            } else {
+              onChange({ from: undefined, to: undefined });
             }
           }}
           numberOfMonths={2}
