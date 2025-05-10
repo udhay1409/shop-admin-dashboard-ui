@@ -6,6 +6,7 @@ import ProductGrid from '@/components/store/ProductGrid';
 import BreadcrumbNav from '@/components/store/BreadcrumbNav';
 import { Product } from '@/types/product';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 const CategoryPage = () => {
   const params = useParams<{ categorySlug: string; subcategorySlug?: string }>();
@@ -15,6 +16,7 @@ const CategoryPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { fetchProductsByCategory } = useStoreFrontProducts();
+  const { toast } = useToast();
   const [categoryName, setCategoryName] = useState('');
   const [subcategoryName, setSubcategoryName] = useState('');
 
@@ -58,9 +60,23 @@ const CategoryPage = () => {
         const actualSlug = subcategorySlug || categorySlug;
         const categoryProducts = await fetchProductsByCategory(actualSlug);
         console.log(`Loaded ${categoryProducts.length} products for ${subcategorySlug ? 'subcategory' : 'category'}: ${actualSlug}`);
+        
+        if (categoryProducts.length === 0) {
+          toast({
+            title: "No products found",
+            description: `No products found for ${subcategoryName || categoryName}`,
+            variant: "default"
+          });
+        }
+        
         setProducts(categoryProducts);
       } catch (error) {
         console.error('Error loading category products:', error);
+        toast({
+          title: "Error loading products",
+          description: "Something went wrong while loading the products. Please try again later.",
+          variant: "destructive"
+        });
         setProducts([]);
       } finally {
         setLoading(false);
@@ -68,7 +84,7 @@ const CategoryPage = () => {
     };
     
     loadCategory();
-  }, [categorySlug, subcategorySlug, fetchProductsByCategory]);
+  }, [categorySlug, subcategorySlug, fetchProductsByCategory, toast]);
 
   // Prepare breadcrumb items
   const breadcrumbItems = [];
@@ -80,7 +96,8 @@ const CategoryPage = () => {
   if (categoryName) {
     breadcrumbItems.push({ 
       label: categoryName, 
-      href: `/store/categories/${categorySlug}` 
+      href: `/store/categories/${categorySlug}`,
+      ...(subcategoryName ? {} : { isCurrent: true })
     });
   }
   

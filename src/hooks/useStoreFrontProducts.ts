@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
@@ -269,25 +268,55 @@ export function useStoreFrontProducts() {
   };
 
   // Helper function to format product data
-  const formatProduct = (item: any): Product => ({
-    id: item.id,
-    name: item.name,
-    price: Number(item.price),
-    stock: item.stock,
-    status: item.status,
-    category: item.category?.name || 'Uncategorized',
-    image: item.image_url,
-    description: item.description || '',
-    sku: item.sku || '',
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
-    originalPrice: item.original_price ? Number(item.original_price) : undefined,
-    discountPercentage: item.discount_percentage ? Number(item.discount_percentage) : undefined,
-    isNew: item.is_new,
-    isSale: item.is_sale,
-    trending: item.trending,
-    hotSelling: item.hot_selling
-  });
+  const formatProduct = (item: any): Product => {
+    // Check if image URL is valid and format it properly
+    let imageUrl = item.image_url;
+    
+    // Ensure image URL is complete and valid
+    if (imageUrl) {
+      // Log the image URL for debugging
+      console.log(`Original image URL: ${imageUrl}`);
+      
+      // Fix relative paths if needed
+      if (imageUrl.startsWith('./') || imageUrl.startsWith('/')) {
+        imageUrl = imageUrl.replace(/^\.?\/?/, '/');
+      }
+      
+      // Ensure URL is valid
+      try {
+        new URL(imageUrl);
+      } catch (e) {
+        console.warn(`Invalid image URL format: ${imageUrl}`);
+        // If it's not a valid URL, assume it's a relative path
+        if (!imageUrl.match(/^(https?:\/\/|data:|blob:)/)) {
+          imageUrl = `/${imageUrl.replace(/^\//, '')}`;
+        }
+      }
+    } else {
+      // Use a default placeholder if no image is available
+      imageUrl = 'https://placehold.co/400x500?text=No+Image';
+    }
+
+    return {
+      id: item.id,
+      name: item.name,
+      price: Number(item.price),
+      stock: item.stock,
+      status: item.status,
+      category: item.category?.name || 'Uncategorized',
+      image: imageUrl,
+      description: item.description || '',
+      sku: item.sku || '',
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+      originalPrice: item.original_price ? Number(item.original_price) : undefined,
+      discountPercentage: item.discount_percentage ? Number(item.discount_percentage) : undefined,
+      isNew: item.is_new,
+      isSale: item.is_sale,
+      trending: item.trending,
+      hotSelling: item.hot_selling
+    };
+  };
 
   // Load featured products
   const loadFeaturedProducts = useCallback(async () => {

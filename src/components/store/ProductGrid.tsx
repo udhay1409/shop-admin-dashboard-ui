@@ -68,6 +68,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     // Only show toast once to avoid spamming
     if (!target.dataset.errorHandled) {
       target.dataset.errorHandled = 'true';
+      console.log("Image failed to load, using placeholder:", target.alt);
       toast({
         title: "Image not found",
         description: "Using placeholder image instead",
@@ -101,10 +102,15 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                   alt={product.name} 
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform"
                   onError={handleImageError}
+                  loading="lazy"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center bg-gray-100">
-                  <span className="text-gray-400">No image</span>
+                  <img 
+                    src="https://placehold.co/400x500?text=No+Image"
+                    alt={`No image for ${product.name}`}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
               )}
               
