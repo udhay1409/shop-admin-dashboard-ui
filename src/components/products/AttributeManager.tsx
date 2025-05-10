@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Plus, X, Check, Trash } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, X, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,19 +22,22 @@ export function AttributeManager({ productId, onAttributesChange, initialAttribu
   const [newAttributeDisplay, setNewAttributeDisplay] = useState('');
   const [newValue, setNewValue] = useState('');
   const [editingAttribute, setEditingAttribute] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Initialize from props only once
   useEffect(() => {
-    if (initialAttributes) {
+    if (initialAttributes && initialAttributes.length > 0 && !isInitialized) {
       const initialMap = new Map<string, string[]>();
       initialAttributes.forEach(attr => {
         initialMap.set(attr.id, attr.values);
       });
       setSelectedAttributes(initialMap);
+      setIsInitialized(true);
     }
-  }, [initialAttributes]);
+  }, [initialAttributes, isInitialized]);
 
-  useEffect(() => {
-    // Notify parent component when attributes change
+  // Notify parent component when attributes change
+  const notifyParent = useCallback(() => {
     if (onAttributesChange) {
       const attributesArray = Array.from(selectedAttributes.entries()).map(([attributeId, values]) => ({
         attributeId,
@@ -43,6 +46,13 @@ export function AttributeManager({ productId, onAttributesChange, initialAttribu
       onAttributesChange(attributesArray);
     }
   }, [selectedAttributes, onAttributesChange]);
+
+  // Only call notifyParent when selectedAttributes changes
+  useEffect(() => {
+    if (isInitialized) {
+      notifyParent();
+    }
+  }, [selectedAttributes, notifyParent, isInitialized]);
 
   const handleAddAttribute = (attributeId: string) => {
     if (!selectedAttributes.has(attributeId)) {

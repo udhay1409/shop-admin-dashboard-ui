@@ -11,6 +11,8 @@ import ProductForm from './ProductForm';
 import { Product } from '@/types/product';
 import { getCategories, getSubcategories } from '@/services/productService';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useProductAttributes } from '@/hooks/useProductAttributes';
+import { ProductAttributeWithValues } from '@/types/attribute';
 
 interface ProductDialogProps {
   isOpen: boolean;
@@ -31,6 +33,27 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
 }) => {
   const [subcategories, setSubcategories] = useState<{id: string, name: string}[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { getProductAttributes } = useProductAttributes();
+  const [productAttributes, setProductAttributes] = useState<ProductAttributeWithValues[]>([]);
+
+  useEffect(() => {
+    if (isOpen && product?.id) {
+      // Fetch product attributes if product exists
+      const fetchProductAttributes = async () => {
+        try {
+          const attributes = await getProductAttributes(product.id);
+          setProductAttributes(attributes);
+        } catch (error) {
+          console.error('Error fetching product attributes:', error);
+        }
+      };
+      
+      fetchProductAttributes();
+    } else {
+      // Reset attributes when adding a new product
+      setProductAttributes([]);
+    }
+  }, [isOpen, product, getProductAttributes]);
 
   useEffect(() => {
     if (isOpen) {
@@ -93,6 +116,7 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
             categories={categories}
             subcategories={subcategories}
             onCategoryChange={handleCategoryChange}
+            initialAttributes={productAttributes}
           />
         </ScrollArea>
       </DialogContent>
