@@ -91,23 +91,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
     },
   });
 
-  // Fetch subcategories when category changes
-  useEffect(() => {
-    const loadSubcategories = async () => {
-      try {
-        // Find the category ID based on the selected category name
-        const fetchedSubcategories = await getSubcategories();
-        setSubcategories(fetchedSubcategories);
-      } catch (error) {
-        console.error('Error loading subcategories:', error);
-        setSubcategories([]);
-      }
-    };
-
-    if (selectedCategory) {
-      loadSubcategories();
-    }
-  }, [selectedCategory]);
+  // No need to fetch subcategories here as they're passed as props
+  // from ProductDialog.tsx which already fetches them
 
   const handleCategoryChange = (value: string) => {
     setSelectedCategory(value);
@@ -590,6 +575,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
       </form>
     </Form>
   );
-}
+};
 
 export default ProductForm;

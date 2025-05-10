@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Product, ProductFormValues, ProductStatus } from "@/types/product";
 
@@ -15,6 +14,7 @@ export async function getProducts(): Promise<Product[]> {
     throw error;
   }
 
+  // Convert database fields to our model
   return data.map(item => ({
     id: item.id,
     name: item.name,
@@ -33,7 +33,7 @@ export async function getProducts(): Promise<Product[]> {
     isSale: item.is_sale,
     trending: item.trending,
     hotSelling: item.hot_selling,
-    // Map database fields to our model fields or use default values
+    // Default values for fields that might not exist in database
     subcategory: item.subcategory || '',
     availableSizes: item.available_sizes || [],
     availableColors: item.available_colors || [],
@@ -61,6 +61,7 @@ export async function getProductById(id: string): Promise<Product | null> {
     throw error;
   }
 
+  // Convert database fields to our model
   return {
     id: data.id,
     name: data.name,
@@ -79,7 +80,7 @@ export async function getProductById(id: string): Promise<Product | null> {
     isSale: data.is_sale,
     trending: data.trending,
     hotSelling: data.hot_selling,
-    // Map database fields to our model fields or use default values
+    // Default values for fields that might not exist in database
     subcategory: data.subcategory || '',
     availableSizes: data.available_sizes || [],
     availableColors: data.available_colors || [],
@@ -101,6 +102,7 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
     console.error('Error finding category:', categoryError);
   }
 
+  // Map our form fields to database column names
   const { data, error } = await supabase
     .from('products')
     .insert({
@@ -118,6 +120,7 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
       is_sale: productData.isSale || false,
       trending: productData.trending || false,
       hot_selling: productData.hotSelling || false,
+      // Additional fields that we need to add to the database
       subcategory: productData.subcategory || null,
       available_sizes: productData.availableSizes || [],
       available_colors: productData.availableColors || [],
@@ -136,6 +139,7 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
     throw error;
   }
 
+  // Convert database fields to our model
   return {
     id: data.id,
     name: data.name,
@@ -154,6 +158,7 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
     isSale: data.is_sale,
     trending: data.trending,
     hotSelling: data.hot_selling,
+    // Map additional fields
     subcategory: data.subcategory || '',
     availableSizes: data.available_sizes || [],
     availableColors: data.available_colors || [],
@@ -222,6 +227,7 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
     throw error;
   }
 
+  // Convert database fields to our model
   return {
     id: data.id,
     name: data.name,
@@ -240,6 +246,7 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
     isSale: data.is_sale,
     trending: data.trending,
     hotSelling: data.hot_selling,
+    // Map additional fields
     subcategory: data.subcategory || '',
     availableSizes: data.available_sizes || [],
     availableColors: data.available_colors || [],
