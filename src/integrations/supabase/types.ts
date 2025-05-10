@@ -396,6 +396,41 @@ export type Database = {
           },
         ]
       }
+      order_status_history: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          order_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_id: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           carrier: string | null
@@ -460,6 +495,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_methods: {
+        Row: {
+          account_number: string | null
+          created_at: string
+          expiry_date: string | null
+          id: string
+          is_default: boolean
+          payment_type: string
+          provider: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_number?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          is_default?: boolean
+          payment_type: string
+          provider: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_number?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          is_default?: boolean
+          payment_type?: string
+          provider?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      product_attribute_values: {
+        Row: {
+          attribute_id: string
+          created_at: string
+          id: string
+          product_id: string
+          value: string
+        }
+        Insert: {
+          attribute_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          value: string
+        }
+        Update: {
+          attribute_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_attribute_values_attribute_id_fkey"
+            columns: ["attribute_id"]
+            isOneToOne: false
+            referencedRelation: "product_attributes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_attribute_values_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_attributes: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       product_images: {
         Row: {
@@ -544,6 +675,63 @@ export type Database = {
             columns: ["variant_id"]
             isOneToOne: false
             referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      product_tags_mapping: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_tags_mapping_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_tags_mapping_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "product_tags"
             referencedColumns: ["id"]
           },
         ]
@@ -897,6 +1085,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_addresses: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          address_type: string
+          city: string
+          country: string
+          created_at: string
+          id: string
+          is_default: boolean
+          postal_code: string
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          address_type?: string
+          city: string
+          country: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          postal_code: string
+          state: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          address_type?: string
+          city?: string
+          country?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          postal_code?: string
+          state?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

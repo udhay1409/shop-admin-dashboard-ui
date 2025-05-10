@@ -1,27 +1,40 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { Customer } from '@/types/customer';
-import { supabase } from '@/integrations/supabase/client';
-import { Profile, UserRole } from '@/types/supabase';
 
-// Define the shape of our auth context
+import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+
+// Define context types
 interface AuthContextType {
-  user: Customer | null;
+  user: User | null;
+  session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  userRole: 'admin' | 'staff' | 'customer' | null;
+  userRole: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  updateProfile: (userData: Partial<Customer>) => void;
-  checkUserRole: () => Promise<string | null>;
+  register: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<boolean>;
+  resetPassword: (newPassword: string) => Promise<boolean>;
+  updateProfile: (data: Partial<Profile>) => Promise<boolean>;
+  refreshSession: () => Promise<void>;
 }
 
-// Create the auth context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface Profile {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+}
 
-// Create a custom hook to use the auth context
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+// Create the context
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -30,390 +43,262 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-// Provider component that wraps the app and makes auth available to all children
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<Customer | null>(null);
-  const [userRole, setUserRole] = useState<'admin' | 'staff' | 'customer' | null>(null);
+// Provider component
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  // Check the user's role from Supabase
-  const checkUserRole = async (): Promise<string | null> => {
+  // Function to fetch user role
+  const fetchUserRole = async (userId: string) => {
     try {
-      if (!user) return null;
+      // Use setTimeout to prevent potential Supabase callback recursion
+      setTimeout(async () => {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .single();
 
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user role:', error);
-        return null;
-      }
-
-      return data?.role || 'customer';
+        if (error) {
+          console.error('Error fetching user role:', error);
+          setUserRole('customer'); // Default role
+        } else {
+          setUserRole(data.role || 'customer');
+        }
+      }, 0);
     } catch (error) {
-      console.error('Error checking user role:', error);
-      return null;
+      console.error('Error in fetchUserRole:', error);
+      setUserRole('customer'); // Default role on error
     }
   };
 
-  // Initialize authentication and set up auth state listener
+  // Initialize auth state
   useEffect(() => {
-    const initAuth = async () => {
-      setIsLoading(true);
-      
-      // Set up auth state listener FIRST
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (event, session) => {
-          if (session?.user) {
-            // Using setTimeout to avoid potential deadlock with Supabase
-            setTimeout(async () => {
-              try {
-                // Fetch profile data
-                const { data: profileData, error: profileError } = await supabase
-                  .from('profiles')
-                  .select('*')
-                  .eq('id', session.user.id)
-                  .single();
-                  
-                if (profileError) {
-                  console.error('Error fetching profile:', profileError);
-                }
-                
-                // Fetch user role
-                const { data: roleData, error: roleError } = await supabase
-                  .from('user_roles')
-                  .select('*')
-                  .eq('user_id', session.user.id)
-                  .single();
-                  
-                if (roleError && roleError.code !== 'PGRST116') { // PGRST116 is "row not found" error
-                  console.error('Error fetching role:', roleError);
-                }
-                
-                // Get role (default to customer if none found)
-                const role = roleData?.role || 'customer';
-                setUserRole(role as 'admin' | 'staff' | 'customer');
-
-                // Create a merged user object with profile data and auth data
-                const userData: Customer = {
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  name: profileData ? 
-                    `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
-                    session.user.email?.split('@')[0] || 'User',
-                  status: 'Active',
-                  joinedDate: session.user.created_at || new Date().toISOString(),
-                  lastLoginDate: new Date().toISOString(),
-                  phone: profileData?.phone || '',
-                  totalOrders: 0,
-                  totalSpent: 0,
-                  emailSubscription: true
-                };
-                
-                setUser(userData);
-              } catch (error) {
-                console.error('Error processing auth state change:', error);
-              }
-            }, 0);
-          } else {
-            setUser(null);
-            setUserRole(null);
-          }
-        }
-      );
-  
-      // THEN check for existing session
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event: AuthChangeEvent, currentSession: Session | null) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
         
-        if (session?.user) {
-          // Fetch profile data
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (profileError) {
-            console.error('Error fetching profile:', profileError);
-          }
-          
-          // Fetch user role
-          const { data: roleData, error: roleError } = await supabase
-            .from('user_roles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single();
-            
-          if (roleError && roleError.code !== 'PGRST116') { // PGRST116 is "row not found" error
-            console.error('Error fetching role:', roleError);
-          }
-          
-          // Get role (default to customer if none found)
-          const role = roleData?.role || 'customer';
-          setUserRole(role as 'admin' | 'staff' | 'customer');
+        // Fetch user role if logged in
+        if (currentSession?.user) {
+          fetchUserRole(currentSession.user.id);
+        } else {
+          setUserRole(null);
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          setUserRole(null);
+        }
+      }
+    );
 
-          // Create a merged user object with profile data and auth data
-          const userData: Customer = {
-            id: session.user.id,
-            email: session.user.email || '',
-            name: profileData ? 
-              `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
-              session.user.email?.split('@')[0] || 'User',
-            status: 'Active',
-            joinedDate: session.user.created_at || new Date().toISOString(),
-            lastLoginDate: new Date().toISOString(),
-            phone: profileData?.phone || '',
-            totalOrders: 0,
-            totalSpent: 0,
-            emailSubscription: true
-          };
-          
-          setUser(userData);
+    // THEN check for existing session
+    const initializeAuth = async () => {
+      try {
+        setIsLoading(true);
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        // Fetch user role if there's an existing session
+        if (currentSession?.user) {
+          await fetchUserRole(currentSession.user.id);
         }
       } catch (error) {
-        console.error('Error during authentication check:', error);
+        console.error('Error initializing auth:', error);
       } finally {
         setIsLoading(false);
       }
-  
-      return () => {
-        subscription.unsubscribe();
-      };
     };
-  
-    initAuth();
+
+    initializeAuth();
+
+    // Cleanup subscription when component unmounts
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Attempt to sign in with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
-        // Properly throw the error to be caught in the component
         throw error;
       }
       
+      // Fetch user role
       if (data.user) {
-        // Fetch user profile from profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-          
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-        }
-        
-        // Fetch user role
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', data.user.id)
-          .single();
-          
-        if (roleError && roleError.code !== 'PGRST116') { // PGRST116 is "row not found" error
-          console.error('Error fetching role:', roleError);
-        }
-        
-        // Get role (default to customer if none found)
-        const role = roleData?.role || 'customer';
-        setUserRole(role as 'admin' | 'staff' | 'customer');
-
-        // Create a merged user object with profile data and auth data
-        const updatedUser: Customer = {
-          id: data.user.id,
-          email: data.user.email || '',
-          name: profileData ? 
-            `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
-            data.user.email?.split('@')[0] || 'User',
-          status: 'Active',
-          joinedDate: data.user.created_at || new Date().toISOString(),
-          lastLoginDate: new Date().toISOString(),
-          phone: profileData?.phone || '',
-          totalOrders: 0,
-          totalSpent: 0,
-          emailSubscription: true
-        };
-        
-        // Save the user to state
-        setUser(updatedUser);
-        
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${updatedUser.name}!`,
-        });
-        
-        // Redirect based on role
-        if (role === 'admin') {
-          navigate('/dashboard');
-        } else {
-          navigate('/store');
-        }
-        
-        return true;
+        await fetchUserRole(data.user.id);
       }
       
-      return false;
+      return true;
     } catch (error: any) {
       console.error('Login error:', error);
-      // Re-throw the error to be caught in the component
       throw error;
     }
   };
 
   // Register function
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
+  const register = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
     try {
-      // Create a new user in Supabase Auth
-      const firstName = name.split(' ')[0];
-      const lastName = name.split(' ').slice(1).join(' ');
-      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             first_name: firstName,
-            last_name: lastName
+            last_name: lastName,
           }
         }
       });
-      
+
       if (error) {
+        throw error;
+      }
+
+      // Check if email confirmation is required
+      if (data.user && !data.user.confirmed_at) {
         toast({
-          title: "Registration failed",
-          description: error.message,
-          variant: "destructive",
+          title: "Verification email sent",
+          description: "Please check your email to confirm your account.",
         });
-        return false;
       }
       
-      if (data.user) {
-        // In Supabase, the profile should be auto-created by our trigger
-        // Add default role for new user
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: data.user.id,
-            role: 'customer'
-          });
-          
-        if (roleError) {
-          console.error('Error setting user role:', roleError);
-        }
-        
-        toast({
-          title: "Registration successful",
-          description: "Your account has been created. Please verify your email if required.",
-        });
-        
-        // Don't auto-login the user - they need to verify email first if required
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
+      return true;
+    } catch (error: any) {
       console.error('Registration error:', error);
-      toast({
-        title: "Registration failed",
-        description: "An error occurred during registration.",
-        variant: "destructive",
-      });
-      return false;
+      throw error;
     }
   };
 
   // Logout function
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
     try {
-      await supabase.auth.signOut();
-      setUser(null);
-      setUserRole(null);
-      toast({
-        title: "Logged out",
-        description: "You have been logged out successfully.",
-      });
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  // Update user profile
-  const updateProfile = async (userData: Partial<Customer>) => {
-    if (user) {
-      try {
-        const updatedUser = { ...user, ...userData };
-        
-        // Update the profile in Supabase
-        if (user.id) {
-          const nameParts = updatedUser.name.split(' ');
-          const firstName = nameParts[0];
-          const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-          
-          const { error } = await supabase
-            .from('profiles')
-            .update({
-              first_name: firstName,
-              last_name: lastName,
-              phone: updatedUser.phone
-            })
-            .eq('id', user.id);
-            
-          if (error) {
-            console.error('Error updating profile:', error);
-            toast({
-              title: "Profile update failed",
-              description: error.message,
-              variant: "destructive",
-            });
-            return;
-          }
-        }
-        
-        setUser(updatedUser);
-        
-        toast({
-          title: "Profile updated",
-          description: "Your profile has been updated successfully.",
-        });
-      } catch (error) {
-        console.error('Error updating profile:', error);
-        toast({
-          title: "Profile update failed",
-          description: "An error occurred while updating your profile.",
-          variant: "destructive",
-        });
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
       }
+      setUserRole(null);
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Logout failed",
+        description: error.message || "An error occurred during logout.",
+        variant: "destructive",
+      });
     }
   };
 
+  // Forgot password function
+  const forgotPassword = async (email: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return true;
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      throw error;
+    }
+  };
+
+  // Reset password function
+  const resetPassword = async (newPassword: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return true;
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      throw error;
+    }
+  };
+
+  // Update profile function
+  const updateProfile = async (profileData: Partial<Profile>): Promise<boolean> => {
+    try {
+      if (!user) {
+        throw new Error('No authenticated user');
+      }
+      
+      // Update auth user metadata
+      await supabase.auth.updateUser({
+        data: {
+          first_name: profileData.first_name,
+          last_name: profileData.last_name,
+        }
+      });
+      
+      // Update profile in profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: profileData.first_name,
+          last_name: profileData.last_name,
+          phone: profileData.phone,
+        })
+        .eq('id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      return true;
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
+  };
+
+  // Refresh session
+  const refreshSession = async (): Promise<void> => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        throw error;
+      }
+      
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      
+      if (data.session?.user) {
+        await fetchUserRole(data.session.user.id);
+      }
+    } catch (error) {
+      console.error('Session refresh error:', error);
+    }
+  };
+
+  // Context value
   const value = {
     user,
+    session,
     isAuthenticated: !!user,
     isLoading,
     userRole,
     login,
     register,
     logout,
+    forgotPassword,
+    resetPassword,
     updateProfile,
-    checkUserRole
+    refreshSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

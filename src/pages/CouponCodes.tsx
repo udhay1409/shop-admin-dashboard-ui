@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,104 +14,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Coupon } from "@/types/coupon";
 import { format } from "date-fns";
-import { Tag, Pencil, Trash2, Search, Plus } from "lucide-react";
+import { Tag, Pencil, Trash2, Search, Plus, Loader2 } from "lucide-react";
 import CouponDialog from "@/components/coupons/CouponDialog";
 import DeleteCouponDialog from "@/components/coupons/DeleteCouponDialog";
-
-// Sample data - in a real app, this would come from an API
-const sampleCoupons: Coupon[] = [
-  {
-    id: "1",
-    code: "SUMMER25",
-    type: "percentage",
-    value: 25,
-    minPurchase: 100,
-    maxDiscount: 50,
-    applicableProducts: "all",
-    applicableCategories: "all",
-    startDate: "2025-06-01T00:00:00Z",
-    endDate: "2025-08-31T23:59:59Z",
-    usageLimit: 1000,
-    usageCount: 456,
-    perCustomer: 1,
-    status: "active",
-    description: "Summer sale discount",
-    createdAt: "2025-05-01T10:00:00Z",
-    updatedAt: "2025-05-01T10:00:00Z",
-  },
-  {
-    id: "2",
-    code: "FREESHIP",
-    type: "free_shipping",
-    value: 0,
-    minPurchase: 50,
-    applicableProducts: "all",
-    applicableCategories: "all",
-    startDate: "2025-05-01T00:00:00Z",
-    endDate: "2025-06-15T23:59:59Z",
-    usageLimit: 500,
-    usageCount: 123,
-    perCustomer: 1,
-    status: "active",
-    description: "Free shipping on orders over $50",
-    createdAt: "2025-04-15T14:00:00Z",
-    updatedAt: "2025-04-15T14:00:00Z",
-  },
-  {
-    id: "3",
-    code: "WELCOME15",
-    type: "percentage",
-    value: 15,
-    applicableProducts: "all",
-    applicableCategories: "all",
-    startDate: "2025-01-01T00:00:00Z",
-    endDate: "2025-12-31T23:59:59Z",
-    usageCount: 987,
-    status: "active",
-    description: "Welcome discount for new customers",
-    createdAt: "2025-01-01T09:00:00Z",
-    updatedAt: "2025-01-01T09:00:00Z",
-  },
-  {
-    id: "4",
-    code: "FLASH50",
-    type: "percentage",
-    value: 50,
-    minPurchase: 200,
-    maxDiscount: 100,
-    applicableProducts: "specific",
-    productIds: ["101", "102", "103"],
-    applicableCategories: "all",
-    startDate: "2025-05-20T00:00:00Z",
-    endDate: "2025-05-22T23:59:59Z",
-    usageLimit: 200,
-    usageCount: 157,
-    perCustomer: 1,
-    status: "expired",
-    description: "Flash sale - 50% off premium products",
-    createdAt: "2025-05-15T11:30:00Z",
-    updatedAt: "2025-05-22T23:59:59Z",
-  },
-  {
-    id: "5",
-    code: "HOLIDAY20",
-    type: "percentage",
-    value: 20,
-    applicableProducts: "all",
-    applicableCategories: "specific",
-    categoryIds: ["clothing", "accessories"],
-    startDate: "2025-12-01T00:00:00Z",
-    endDate: "2025-12-31T23:59:59Z",
-    usageCount: 0,
-    status: "scheduled",
-    description: "Holiday season discount",
-    createdAt: "2025-11-10T16:45:00Z",
-    updatedAt: "2025-11-10T16:45:00Z",
-  },
-];
+import { useCoupons } from "@/hooks/useCoupons";
+import CouponStats from "@/components/coupons/CouponStats";
 
 const CouponCodes = () => {
-  const [coupons, setCoupons] = useState<Coupon[]>(sampleCoupons);
+  const { coupons, loading, createCoupon, updateCoupon, deleteCoupon } = useCoupons();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -132,26 +42,23 @@ const CouponCodes = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleSaveCoupon = (couponData: Coupon) => {
-    if (couponData.id) {
-      // Update existing coupon
-      setCoupons(coupons.map(c => c.id === couponData.id ? couponData : c));
-    } else {
-      // Add new coupon
-      const newCoupon = {
-        ...couponData,
-        id: Math.random().toString(36).substring(2, 9),
-        usageCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setCoupons([...coupons, newCoupon]);
+  const handleSaveCoupon = async (couponData: Coupon) => {
+    try {
+      if (couponData.id) {
+        // Update existing coupon
+        await updateCoupon(couponData.id, couponData);
+      } else {
+        // Add new coupon
+        await createCoupon(couponData);
+      }
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Error saving coupon:", error);
     }
-    setIsDialogOpen(false);
   };
 
-  const handleDeleteCoupon = (id: string) => {
-    setCoupons(coupons.filter(c => c.id !== id));
+  const handleDeleteCoupon = async (id: string) => {
+    await deleteCoupon(id);
     setIsDeleteDialogOpen(false);
   };
 
@@ -200,6 +107,8 @@ const CouponCodes = () => {
         </Button>
       </div>
 
+      <CouponStats />
+
       <Separator className="my-6" />
 
       <div className="flex justify-between items-center mb-6">
@@ -229,7 +138,16 @@ const CouponCodes = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCoupons.length > 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-10">
+                  <div className="flex justify-center items-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-pink-500 mr-2" />
+                    <span className="text-muted-foreground">Loading coupons...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredCoupons.length > 0 ? (
               filteredCoupons.map((coupon) => (
                 <TableRow key={coupon.id}>
                   <TableCell className="font-medium flex items-center gap-2">

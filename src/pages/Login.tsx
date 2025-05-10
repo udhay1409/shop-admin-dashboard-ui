@@ -44,6 +44,7 @@ const Login = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Check if we have a redirect path
   const from = location.state?.from?.pathname || '/';
@@ -68,8 +69,12 @@ const Login = () => {
   }, [isAuthenticated, isLoading, navigate, userRole]);
 
   const onSubmit = async (values: LoginFormValues) => {
+    if (isSubmitting) return;
+    
     try {
+      setIsSubmitting(true);
       setErrorMessage(null);
+      
       const success = await login(values.email, values.password);
       
       if (success) {
@@ -81,9 +86,14 @@ const Login = () => {
     } catch (error: any) {
       console.error('Login error:', error);
       
+      // Handle specific error cases
       if (error.message && error.message.includes('Email not confirmed')) {
         setUserEmail(values.email);
         setShowVerification(true);
+      } else if (error.message && error.message.includes('Invalid login credentials')) {
+        setErrorMessage('Invalid email or password. Please try again.');
+      } else if (error.message && error.message.includes('rate limit')) {
+        setErrorMessage('Too many login attempts. Please try again later.');
       } else {
         setErrorMessage(error.message || 'An unexpected error occurred.');
         toast({
@@ -92,6 +102,8 @@ const Login = () => {
           variant: 'destructive',
         });
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -178,9 +190,22 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Login
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center">
+                    <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></span>
+                    Logging in...
+                  </span>
+                ) : (
+                  <>
+                    Login
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </form>
           </Form>
