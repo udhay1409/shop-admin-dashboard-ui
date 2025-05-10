@@ -15,7 +15,7 @@ import {
   Heart,
 } from 'lucide-react';
 import AdminBar from '@/components/AdminBar';
-import { Link, Routes, Route } from 'react-router-dom';
+import { Link, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import HomePage from './HomePage';
 import CategoryPage from './store/CategoryPage';
 import SubcategoryPage from './store/SubcategoryPage';
@@ -28,6 +28,8 @@ import DynamicNavigation from '@/components/store/DynamicNavigation';
 const StoreFront: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const location = useLocation();
+  
   // Simple admin check (in a real app, use proper auth)
   const isAdmin = true; // Replace with actual auth logic
   
@@ -247,14 +249,14 @@ const StoreFront: React.FC = () => {
       {/* Main Content - Routes */}
       <main className="flex-grow">
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/categories/:categorySlug" element={<CategoryPage />} />
-          <Route path="/categories/:categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
-          <Route path="/product/:productId" element={<ProductDetailPage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
-          {/* Add more routes as needed */}
+          <Route index element={<HomePage />} />
+          <Route path="categories/:categorySlug" element={<CategoryPage />} />
+          <Route path="categories/:categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
+          <Route path="product/:productId" element={<ProductDetailPage />} />
+          <Route path="cart" element={<CartPage />} />
+          <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="order-confirmation" element={<OrderConfirmationPage />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       

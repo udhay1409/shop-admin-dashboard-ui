@@ -9,7 +9,7 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
-import { Category, CategoryStatus } from '@/types/category';
+import { Category } from '@/types/category';
 
 interface DynamicNavigationProps {
   className?: string;
@@ -23,13 +23,13 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
   useEffect(() => {
     // In a real app, you would fetch these from your API or backend
     // For now, we'll use mock data
-    const mockCategories: Category[] = [
+    const mockCategories = [
       {
         id: "1",
         name: "Kurthi",
         slug: "kurthi",
         description: "Beautiful kurthi collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 42,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -39,7 +39,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Salwar Suits",
         slug: "salwar-suits",
         description: "Elegant salwar suits",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 36,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -49,7 +49,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Lehenga Cholis",
         slug: "lehenga-cholis",
         description: "Traditional lehenga cholis",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 24,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -59,21 +59,21 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Dupattas",
         slug: "dupattas",
         description: "Stylish dupattas collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 18,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
     ];
     
-    const mockSubcategories: Category[] = [
+    const mockSubcategories = [
       // Kurthi subcategories
       {
         id: "101",
         name: "Long Kurthi",
         slug: "long-kurthi",
         description: "Long Kurthi collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 24,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -84,7 +84,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Short Kurthi",
         slug: "short-kurthi",
         description: "Short Kurthi collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 18,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -95,7 +95,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Designer Kurthi",
         slug: "designer-kurthi",
         description: "Designer Kurthi collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 14,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -108,7 +108,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Anarkali Suits",
         slug: "anarkali-suits",
         description: "Anarkali Suits collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 15,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -119,7 +119,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Punjabi Suits",
         slug: "punjabi-suits",
         description: "Punjabi Suits collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 12,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -132,7 +132,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Bridal Lehenga",
         slug: "bridal-lehenga",
         description: "Bridal Lehenga collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 10,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -143,7 +143,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Designer Lehenga",
         slug: "designer-lehenga",
         description: "Designer Lehenga collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 14,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -156,7 +156,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Silk Dupattas",
         slug: "silk-dupattas",
         description: "Silk Dupattas collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 8,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -167,7 +167,7 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
         name: "Cotton Dupattas",
         slug: "cotton-dupattas",
         description: "Cotton Dupattas collection",
-        status: "Active" as CategoryStatus,
+        status: "Active" as Category['status'],
         productsCount: 10,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -187,20 +187,38 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
     return location.pathname === path;
   };
 
+  // Create a custom link component for NavigationMenuLink that uses React Router
+  const MenuLink = React.forwardRef<
+    HTMLAnchorElement,
+    React.ComponentPropsWithoutRef<"a"> & { active?: boolean }
+  >(({ className, active, children, ...props }, ref) => (
+    <Link
+      ref={ref}
+      className={cn(
+        "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-pink-50 hover:text-[#EC008C]",
+        active && "bg-pink-50 text-[#EC008C]", 
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </Link>
+  ));
+  MenuLink.displayName = "MenuLink";
+
   return (
     <NavigationMenu className={cn("justify-start", className)}>
       <NavigationMenuList>
         <NavigationMenuItem>
-          <Link to="/store">
-            <NavigationMenuLink
-              className={cn(
-                "group inline-flex h-10 w-max items-center justify-center px-4 py-2 text-sm font-medium transition-colors hover:text-[#EC008C]",
-                isActiveLink("/store") ? "text-[#EC008C] font-medium" : "text-foreground"
-              )}
-            >
-              Home
-            </NavigationMenuLink>
-          </Link>
+          <NavigationMenuLink
+            asChild
+            className={cn(
+              "group inline-flex h-10 w-max items-center justify-center px-4 py-2 text-sm font-medium transition-colors hover:text-[#EC008C]",
+              isActiveLink("/store") ? "text-[#EC008C] font-medium" : "text-foreground"
+            )}
+          >
+            <Link to="/store">Home</Link>
+          </NavigationMenuLink>
         </NavigationMenuItem>
         
         {categories.map((category) => {
@@ -220,45 +238,45 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <div className="grid w-[400px] gap-3 p-4 md:grid-cols-2">
-                      <Link
-                        to={`/store/categories/${category.slug}`}
-                        className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-pink-50 to-pink-100 p-6 no-underline outline-none focus:shadow-md"
-                      >
-                        <div className="mt-4 mb-2 text-lg font-medium">
-                          All {category.name}
-                        </div>
-                        <p className="text-sm leading-tight text-muted-foreground">
-                          Browse all {category.name.toLowerCase()} products
-                        </p>
-                      </Link>
+                      <div className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-pink-50 to-pink-100 p-6 no-underline outline-none focus:shadow-md">
+                        <Link to={`/store/categories/${category.slug}`} className="no-underline">
+                          <div className="mt-4 mb-2 text-lg font-medium">
+                            All {category.name}
+                          </div>
+                          <p className="text-sm leading-tight text-muted-foreground">
+                            Browse all {category.name.toLowerCase()} products
+                          </p>
+                        </Link>
+                      </div>
                       <div className="p-2">
                         {categorySubcats.map((subcategory) => (
-                          <Link
+                          <MenuLink
                             key={subcategory.id}
                             to={`/store/categories/${category.slug}/${subcategory.slug}`}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-pink-50 hover:text-[#EC008C]"
+                            active={location.pathname === `/store/categories/${category.slug}/${subcategory.slug}`}
                           >
                             <div className="text-sm font-medium">{subcategory.name}</div>
                             <div className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                               {subcategory.productsCount} products
                             </div>
-                          </Link>
+                          </MenuLink>
                         ))}
                       </div>
                     </div>
                   </NavigationMenuContent>
                 </>
               ) : (
-                <Link to={`/store/categories/${category.slug}`}>
-                  <NavigationMenuLink
-                    className={cn(
-                      "group inline-flex h-10 w-max items-center justify-center px-4 py-2 text-sm font-medium transition-colors hover:text-[#EC008C]",
-                      location.pathname.includes(`/store/categories/${category.slug}`) ? "text-[#EC008C] font-medium" : "text-foreground"
-                    )}
-                  >
+                <NavigationMenuLink
+                  asChild
+                  className={cn(
+                    "group inline-flex h-10 w-max items-center justify-center px-4 py-2 text-sm font-medium transition-colors hover:text-[#EC008C]",
+                    location.pathname.includes(`/store/categories/${category.slug}`) ? "text-[#EC008C] font-medium" : "text-foreground"
+                  )}
+                >
+                  <Link to={`/store/categories/${category.slug}`}>
                     {category.name}
-                  </NavigationMenuLink>
-                </Link>
+                  </Link>
+                </NavigationMenuLink>
               )}
             </NavigationMenuItem>
           );

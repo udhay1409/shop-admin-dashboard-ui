@@ -60,55 +60,50 @@ const AdminRoute = ({ children }) => {
 
 function App() {
   return (
-    <Router>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          {/* Store Frontend */}
-          <Route path="/store" element={<StoreFront />}>
-            <Route index element={<HomePage />} />
-          </Route>
-          <Route path="/store/categories/:categorySlug" element={<StoreFront />} />
-          <Route path="/store/categories/:categorySlug/:subcategorySlug" element={<StoreFront />} />
-          <Route path="/store/product/:productId" element={<StoreFront />} />
-          <Route path="/store/cart" element={<StoreFront />} />
-          <Route path="/store/checkout" element={<StoreFront />} />
-          <Route path="/store/order-confirmation" element={<StoreFront />} />
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            {/* Store Frontend - Fix: Use a proper nested route structure */}
+            <Route path="/store/*" element={<StoreFront />} />
 
-          {/* Authentication routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+            {/* Authentication routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Protected admin routes */}
-          <Route path="/" element={
-            <AdminRoute>
-              <AdminLayout />
-            </AdminRoute>
-          }>
-            <Route index element={<Dashboard />} />
-            <Route path="orders" element={<Orders />} />
-            <Route path="products" element={<Products />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="subcategories" element={<Subcategories />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="delivery" element={<Delivery />} />
-            <Route path="customers" element={<Customers />} />
-            <Route path="vendors" element={<Vendors />} />
-            <Route path="inventory" element={<Inventory />} />
-            <Route path="coupon-code" element={<CouponCodes />} />
-            <Route path="reviews" element={<Reviews />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="transaction-logs" element={<TransactionLogs />} />
-            <Route path="pos" element={<POS />} />
-            <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
-            {/* Other routes will be added as they're needed */}
+            {/* Protected admin routes */}
+            <Route path="/" element={
+              <AdminRoute>
+                <AdminLayout />
+              </AdminRoute>
+            }>
+              <Route index element={<Dashboard />} />
+              <Route path="orders" element={<Orders />} />
+              <Route path="products" element={<Products />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="subcategories" element={<Subcategories />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="delivery" element={<Delivery />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="vendors" element={<Vendors />} />
+              <Route path="inventory" element={<Inventory />} />
+              <Route path="coupon-code" element={<CouponCodes />} />
+              <Route path="reviews" element={<Reviews />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="transaction-logs" element={<TransactionLogs />} />
+              <Route path="pos" element={<POS />} />
+              <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
+              {/* Other routes will be added as they're needed */}
+              <Route path="*" element={<NotFound />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </TooltipProvider>
-    </Router>
+          </Routes>
+        </TooltipProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
