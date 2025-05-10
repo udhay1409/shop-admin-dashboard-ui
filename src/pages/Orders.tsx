@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -882,7 +883,77 @@ const Orders: React.FC = () => {
               <Printer className="mr-2 h-4 w-4" />
               Print Order
             </Button>
-            
-            {selectedOrder && selectedOrder.status === 'Pending' && (
-              <Button 
-                variant="
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Order Confirmation */}
+      <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this order? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, Keep Order</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => selectedOrder && handleCancelOrder(selectedOrder.id)}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Yes, Cancel Order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delivery Status Update Dialog */}
+      <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Delivery Status</DialogTitle>
+            <DialogDescription>
+              Update the delivery status for order {selectedOrder?.id}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Delivery Notes (Optional)</label>
+              <Input 
+                placeholder="E.g., Left with receptionist, customer was not home..."
+                value={deliveryNotes}
+                onChange={(e) => setDeliveryNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="sm:justify-start gap-2 flex-wrap">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeliveryDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => selectedOrder && handleFailedDelivery(selectedOrder.id)}
+            >
+              Failed Delivery
+            </Button>
+            <Button 
+              className="bg-green-500 hover:bg-green-600"
+              onClick={() => selectedOrder && handleDeliveryComplete(selectedOrder.id)}
+            >
+              <Check className="mr-2 h-4 w-4" />
+              Mark as Delivered
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default Orders;
