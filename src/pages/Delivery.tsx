@@ -35,16 +35,6 @@ import {
   DeliveryItem
 } from '@/services/deliveryService';
 
-interface DeliveryItem {
-  id: string;
-  orderId: string;
-  customerName: string;
-  address: string;
-  status: "Awaiting Dispatch" | "Out for Delivery" | "Delivered" | "Failed Delivery";
-  estimatedDelivery: string;
-  assignedCourier?: string;
-}
-
 const Delivery: React.FC = () => {
   const [activeDeliveries, setActiveDeliveries] = useState<DeliveryItem[]>([]);
   const [deliveryStats, setDeliveryStats] = useState({

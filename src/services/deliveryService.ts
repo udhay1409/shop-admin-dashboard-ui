@@ -101,7 +101,7 @@ export async function getDeliveryStats(): Promise<{
 }> {
   const { data, error } = await supabase
     .from('orders')
-    .select('delivery_status')
+    .select('delivery_status, created_at')  // Added created_at to the selection
     .in('status', ['Packed', 'Shipped', 'Delivered'])
     .gte('created_at', new Date(new Date().setDate(new Date().getDate() - 30)).toISOString()); // Last 30 days
 
@@ -124,13 +124,15 @@ export async function getDeliveryStats(): Promise<{
 
 // Assign a courier to a delivery
 export async function assignCourier(orderId: string, courierName: string): Promise<boolean> {
+  const updateData = {
+    carrier: courierName,
+    delivery_status: 'Out for Delivery' as DeliveryStatus,
+    updated_at: new Date().toISOString()
+  };
+
   const { error } = await supabase
     .from('orders')
-    .update({
-      carrier: courierName,
-      delivery_status: 'Out for Delivery' as DeliveryStatus,
-      updated_at: new Date().toISOString()
-    })
+    .update(updateData)
     .eq('id', orderId);
 
   if (error) {
