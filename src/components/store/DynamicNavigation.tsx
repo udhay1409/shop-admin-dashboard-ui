@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -190,10 +191,11 @@ const DynamicNavigation: React.FC<DynamicNavigationProps> = ({ className }) => {
   // Create a custom link component for NavigationMenuLink that uses React Router
   const MenuLink = React.forwardRef<
     HTMLAnchorElement,
-    React.ComponentPropsWithoutRef<"a"> & { active?: boolean }
-  >(({ className, active, children, ...props }, ref) => (
+    React.ComponentPropsWithoutRef<"a"> & { active?: boolean, to: string }
+  >(({ className, active, children, to, ...props }, ref) => (
     <Link
       ref={ref}
+      to={to}
       className={cn(
         "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-pink-50 hover:text-[#EC008C]",
         active && "bg-pink-50 text-[#EC008C]", 

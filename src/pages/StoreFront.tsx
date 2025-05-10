@@ -23,6 +23,7 @@ import ProductDetailPage from './store/ProductDetailPage';
 import CartPage from './store/CartPage';
 import CheckoutPage from './store/CheckoutPage';
 import OrderConfirmationPage from './store/OrderConfirmationPage';
+import NotFound from './NotFound';
 import DynamicNavigation from '@/components/store/DynamicNavigation';
 
 const StoreFront: React.FC = () => {
