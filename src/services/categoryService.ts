@@ -8,7 +8,7 @@ export async function getCategories(): Promise<Category[]> {
   const { data: categoriesData, error } = await supabase
     .from('categories')
     .select('*')
-    .eq('parent_id', null) // Only fetch top-level categories
+    .is('parent_id', null) // Changed from .eq('parent_id', null) to .is('parent_id', null)
     .order('name');
   
   if (error) {
@@ -29,7 +29,7 @@ export async function getSubcategories(parentId?: string): Promise<Category[]> {
   let query = supabase
     .from('categories')
     .select('*')
-    .not('parent_id', 'is', null); // Ensure it's a subcategory
+    .not('parent_id', 'is', null); // Keep this as it's correct
   
   if (parentId) {
     query = query.eq('parent_id', parentId);
