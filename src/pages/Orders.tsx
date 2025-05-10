@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableHeader, 
@@ -47,27 +46,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Search, FilterIcon, CalendarIcon, CheckCircle, ArrowRight, Package, Truck, Check, X, Clock, MapPin, PackageOpen } from "lucide-react";
+import { Eye, Search, FilterIcon, CalendarIcon, CheckCircle, ArrowRight, Package, Truck, Check, X, Clock, MapPin, PackageOpen, Download, Printer } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-
-// Enhanced Order Type with Delivery Information
-interface Order {
-  id: string;
-  date: string;
-  customerName: string;
-  items: string;
-  total: string;
-  payment: string;
-  status: "Pending" | "Packed" | "Shipped" | "Delivered" | "Cancelled" | "Exchanged";
-  deliveryStatus?: "Awaiting Dispatch" | "Out for Delivery" | "Delivered" | "Failed Delivery" | null;
-  estimatedDelivery?: string | null;
-  deliveryTrackingId?: string | null;
-  deliveryCarrier?: string | null;
-  deliveryNotes?: string | null;
-  expectedAction: string;
-  address?: string;
-  phone?: string;
-}
+import OrderTimeline from '@/components/orders/OrderTimeline';
+import OrdersTable from '@/components/orders/OrdersTable';
+import { Order } from '@/types/order';
 
 const Orders: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,6 +64,7 @@ const Orders: React.FC = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   // Enhanced sample order data with delivery information
   const [ordersData, setOrdersData] = useState<Order[]>([
@@ -302,18 +286,17 @@ const Orders: React.FC = () => {
     toast({
       title: `Order ${orderId} Delivered`,
       description: `Delivery completed successfully`,
-      variant: "default", // Fixed: Changed from "success" to "default"
+      variant: "default",
     });
   };
 
   // Handle failed delivery
   const handleFailedDelivery = (orderId: string) => {
-    // Fixed: Type safety for deliveryStatus
     const updatedOrders = ordersData.map(order => {
       if (order.id === orderId) {
         return {
           ...order,
-          deliveryStatus: 'Failed Delivery' as const, // Using const assertion to fix type
+          deliveryStatus: 'Failed Delivery' as const,
           deliveryNotes: deliveryNotes || 'Delivery attempt failed'
         };
       }
@@ -335,6 +318,124 @@ const Orders: React.FC = () => {
   const openDeliveryDialog = (order: Order) => {
     setSelectedOrder(order);
     setIsDeliveryDialogOpen(true);
+  };
+
+  // Export orders data as CSV
+  const exportOrdersAsCSV = () => {
+    setIsExporting(true);
+    
+    // Simulate export process
+    setTimeout(() => {
+      const headers = ['Order ID', 'Date', 'Customer', 'Items', 'Total', 'Payment', 'Status'];
+      const rows = filteredOrders.map(order => [
+        order.id,
+        order.date,
+        order.customerName,
+        order.items,
+        order.total,
+        order.payment,
+        order.status
+      ]);
+      
+      // Create CSV content
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+      
+      // Create download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setIsExporting(false);
+      
+      toast({
+        title: "Orders Exported",
+        description: `${filteredOrders.length} orders exported to CSV`,
+        variant: "default",
+      });
+    }, 1000);
+  };
+
+  // Print order details
+  const printOrderDetails = () => {
+    if (!selectedOrder) return;
+    
+    // Open a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Print Failed",
+        description: "Please allow popups for this site to print order details",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create print-friendly content
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Order ${selectedOrder.id}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 30px; }
+            h1 { color: #333; }
+            .order-info { margin-bottom: 20px; }
+            .order-info div { margin-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .footer { margin-top: 30px; font-size: 12px; text-align: center; color: #666; }
+          </style>
+        </head>
+        <body>
+          <h1>Order Details: ${selectedOrder.id}</h1>
+          <div class="order-info">
+            <div><strong>Date:</strong> ${selectedOrder.date}</div>
+            <div><strong>Customer:</strong> ${selectedOrder.customerName}</div>
+            <div><strong>Address:</strong> ${selectedOrder.address || 'N/A'}</div>
+            <div><strong>Phone:</strong> ${selectedOrder.phone || 'N/A'}</div>
+            <div><strong>Status:</strong> ${selectedOrder.status}</div>
+            <div><strong>Payment:</strong> ${selectedOrder.payment}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Items</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${selectedOrder.items}</td>
+                <td>${selectedOrder.total}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="footer">
+            <p>Printed on ${new Date().toLocaleString()}</p>
+          </div>
+        </body>
+      </html>
+    `);
+    
+    // Trigger print and close the window after
+    setTimeout(() => {
+      printWindow.document.close();
+      printWindow.print();
+    }, 500);
+    
+    toast({
+      title: "Print Initiated",
+      description: "Order details prepared for printing",
+      variant: "default",
+    });
   };
 
   // Filter orders based on active tab, search query, and additional filters
@@ -370,7 +471,7 @@ const Orders: React.FC = () => {
   }
 
   // Reset to first page when filters change
-  React.useEffect(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, activeTab, dateFilter, paymentFilter]);
 
@@ -421,12 +522,24 @@ const Orders: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold">Order Management</h1>
-        <Button variant="default" className="bg-pink-500 hover:bg-pink-600" onClick={handleNewOrder}>
-          <span className="mr-2">New Order</span>
-          <span className="text-lg">+</span>
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-2"
+            onClick={exportOrdersAsCSV}
+            disabled={isExporting || filteredOrders.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            <span>{isExporting ? 'Exporting...' : 'Export Orders'}</span>
+          </Button>
+          <Button variant="default" className="bg-pink-500 hover:bg-pink-600" onClick={handleNewOrder}>
+            <span className="mr-2">New Order</span>
+            <span className="text-lg">+</span>
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -752,7 +865,7 @@ const Orders: React.FC = () => {
             </div>
           )}
           
-          <DialogFooter className="sm:justify-start gap-2">
+          <DialogFooter className="sm:justify-start gap-2 flex-wrap">
             <Button 
               variant="default" 
               className="bg-pink-500 hover:bg-pink-600"
@@ -761,327 +874,15 @@ const Orders: React.FC = () => {
               Close
             </Button>
             
+            <Button 
+              variant="outline" 
+              onClick={printOrderDetails}
+              className="border-gray-300"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Print Order
+            </Button>
+            
             {selectedOrder && selectedOrder.status === 'Pending' && (
               <Button 
-                variant="outline" 
-                onClick={() => {
-                  handleConfirmOrder(selectedOrder.id);
-                  setIsViewDialogOpen(false);
-                }}
-              >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Confirm Order
-              </Button>
-            )}
-            
-            {selectedOrder && selectedOrder.status === 'Packed' && (
-              <Button 
-                variant="outline"
-                className="border-amber-500 text-amber-600 hover:bg-amber-50"
-                onClick={() => {
-                  handleShipOrder(selectedOrder.id);
-                  setIsViewDialogOpen(false);
-                }}
-              >
-                <Truck className="mr-2 h-4 w-4" />
-                Ship Order
-              </Button>
-            )}
-            
-            {selectedOrder && selectedOrder.status === 'Shipped' && (
-              <Button 
-                variant="outline"
-                className="border-green-500 text-green-600 hover:bg-green-50"
-                onClick={() => {
-                  openDeliveryDialog(selectedOrder);
-                  setIsViewDialogOpen(false);
-                }}
-              >
-                <Check className="mr-2 h-4 w-4" />
-                Mark as Delivered
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delivery Status Update Dialog */}
-      <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Update Delivery Status</DialogTitle>
-            <DialogDescription>
-              {selectedOrder?.id} - {selectedOrder?.customerName}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="deliveryNotes" className="text-sm font-medium">
-                Delivery Notes
-              </label>
-              <Input
-                id="deliveryNotes"
-                placeholder="Add notes about the delivery..."
-                value={deliveryNotes}
-                onChange={(e) => setDeliveryNotes(e.target.value)}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <Button 
-                variant="outline" 
-                className="border-red-200 text-red-600 hover:bg-red-50"
-                onClick={() => selectedOrder && handleFailedDelivery(selectedOrder.id)}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Failed Delivery
-              </Button>
-              
-              <Button 
-                variant="default"
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => selectedOrder && handleDeliveryComplete(selectedOrder.id)}
-              >
-                <Check className="mr-2 h-4 w-4" />
-                Delivered
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Cancel Order Confirmation Dialog */}
-      <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action will cancel the order {selectedOrder?.id}. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>No, keep order</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (selectedOrder) {
-                  handleCancelOrder(selectedOrder.id);
-                }
-              }}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Yes, cancel order
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-};
-
-// Order Timeline Component
-interface OrderTimelineProps {
-  order: Order;
-}
-
-const OrderTimeline: React.FC<OrderTimelineProps> = ({ order }) => {
-  // Define timeline events based on order status
-  const timelineEvents = [];
-  
-  // Always add confirmation step
-  timelineEvents.push({
-    status: 'Confirmed',
-    icon: <Package className="h-4 w-4" />,
-    date: order.date,
-    isCompleted: true
-  });
-  
-  // Add packing step
-  timelineEvents.push({
-    status: 'Packed',
-    icon: <PackageOpen className="h-4 w-4" />,
-    date: order.date, // In a real app, you'd have actual timestamps
-    isCompleted: ['Packed', 'Shipped', 'Delivered'].includes(order.status)
-  });
-  
-  // Add shipping step
-  timelineEvents.push({
-    status: 'Shipped',
-    icon: <Truck className="h-4 w-4" />,
-    date: order.deliveryStatus === 'Out for Delivery' || order.status === 'Delivered' ? 
-          order.date : undefined,
-    isCompleted: ['Shipped', 'Delivered'].includes(order.status)
-  });
-  
-  // Add delivery step
-  timelineEvents.push({
-    status: 'Delivered',
-    icon: <MapPin className="h-4 w-4" />,
-    date: order.status === 'Delivered' ? order.date : undefined,
-    isCompleted: order.status === 'Delivered'
-  });
-  
-  return (
-    <div className="space-y-3">
-      {timelineEvents.map((event, index) => (
-        <div key={index} className="flex items-start">
-          <div className={`flex-shrink-0 h-7 w-7 rounded-full flex items-center justify-center ${
-            event.isCompleted ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
-          }`}>
-            {event.icon}
-          </div>
-          <div className="ml-3">
-            <p className={`text-sm font-medium ${
-              event.isCompleted ? 'text-green-600' : 'text-gray-500'
-            }`}>
-              {event.status}
-            </p>
-            {event.date && (
-              <p className="text-xs text-gray-500">{event.date}</p>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-interface OrdersTableProps {
-  orders: Order[];
-  getStatusBadgeClass: (status: string) => string;
-  getDeliveryStatusBadgeClass: (status: string | null | undefined) => string;
-  onViewOrder: (order: Order) => void;
-  onConfirmOrder: (orderId: string) => void;
-  onShipOrder: (orderId: string) => void;
-  onDeliveryUpdate: (order: Order) => void;
-  onCancelOrder: (order: Order) => void;
-}
-
-const OrdersTable: React.FC<OrdersTableProps> = ({ 
-  orders, 
-  getStatusBadgeClass,
-  getDeliveryStatusBadgeClass,
-  onViewOrder,
-  onConfirmOrder,
-  onShipOrder,
-  onDeliveryUpdate,
-  onCancelOrder
-}) => {
-  return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-gray-50">
-            <TableHead className="font-semibold">Order ID</TableHead>
-            <TableHead className="font-semibold">Date</TableHead>
-            <TableHead className="font-semibold">Customer</TableHead>
-            <TableHead className="font-semibold">Items</TableHead>
-            <TableHead className="font-semibold">Total</TableHead>
-            <TableHead className="font-semibold">Payment</TableHead>
-            <TableHead className="font-semibold">Status</TableHead>
-            <TableHead className="font-semibold">Delivery</TableHead>
-            <TableHead className="font-semibold">Next Action</TableHead>
-            <TableHead className="font-semibold text-right">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.length > 0 ? (
-            orders.map((order, index) => (
-              <TableRow key={index} className="border-b hover:bg-gray-50">
-                <TableCell className="font-medium">{order.id}</TableCell>
-                <TableCell>{order.date}</TableCell>
-                <TableCell>{order.customerName}</TableCell>
-                <TableCell>{order.items}</TableCell>
-                <TableCell>{order.total}</TableCell>
-                <TableCell>{order.payment}</TableCell>
-                <TableCell>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(order.status)}`}>
-                    {order.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  {order.deliveryStatus ? (
-                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${getDeliveryStatusBadgeClass(order.deliveryStatus)}`}>
-                      {order.deliveryStatus}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-400">-</span>
-                  )}
-                </TableCell>
-                <TableCell>{order.expectedAction}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="h-8 w-8 p-0"
-                      onClick={() => onViewOrder(order)}
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span className="sr-only">View</span>
-                    </Button>
-                    
-                    {order.status === 'Pending' && (
-                      <>
-                        <Button 
-                          size="sm" 
-                          className="h-8 bg-pink-500 hover:bg-pink-600"
-                          onClick={() => onConfirmOrder(order.id)}
-                        >
-                          <ArrowRight className="h-4 w-4" />
-                          <span className="sr-only">Confirm</span>
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="h-8 w-8 p-0 border-red-300 hover:bg-red-50 hover:text-red-600"
-                          onClick={() => onCancelOrder(order)}
-                        >
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Cancel</span>
-                        </Button>
-                      </>
-                    )}
-                    
-                    {order.status === 'Packed' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="h-8 border-amber-300 hover:bg-amber-50 hover:text-amber-600"
-                        onClick={() => onShipOrder(order.id)}
-                      >
-                        <Truck className="h-4 w-4 mr-1" />
-                        <span className="text-xs">Ship</span>
-                      </Button>
-                    )}
-                    
-                    {order.status === 'Shipped' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="h-8 border-green-300 hover:bg-green-50 hover:text-green-600"
-                        onClick={() => onDeliveryUpdate(order)}
-                      >
-                        <Check className="h-4 w-4 mr-1" />
-                        <span className="text-xs">Deliver</span>
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={10} className="text-center py-6 text-gray-500">
-                No orders found. Try changing your search or filters.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  );
-};
-
-export default Orders;
-
+                variant="
