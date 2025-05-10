@@ -1,13 +1,17 @@
 
 import React, { useEffect, useState } from 'react';
-import { Outlet, useLocation, Link } from 'react-router-dom';
+import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import { Button } from './ui/button';
-import { Store } from 'lucide-react';
+import { Store, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 const AdminLayout: React.FC = () => {
   const location = useLocation();
   const [pageTitle, setPageTitle] = useState('Dashboard');
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Update the page title based on the current route
@@ -18,6 +22,24 @@ const AdminLayout: React.FC = () => {
       setPageTitle(path.charAt(0).toUpperCase() + path.slice(1));
     }
   }, [location]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of the admin dashboard",
+      });
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Logout failed",
+        description: "An error occurred while logging out",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -36,6 +58,15 @@ const AdminLayout: React.FC = () => {
                     View Store
                   </Button>
                 </Link>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-red-500 hover:bg-red-50 hover:border-red-200"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </Button>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
