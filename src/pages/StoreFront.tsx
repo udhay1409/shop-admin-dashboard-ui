@@ -1,19 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import {
-  Heart,
   Menu,
   X,
   ChevronRight,
@@ -22,12 +11,12 @@ import {
   MapPin,
   Search,
   ShoppingCart,
-  User
+  User,
+  Heart,
 } from 'lucide-react';
-import useProductInventory from '@/hooks/useProductInventory';
 import AdminBar from '@/components/AdminBar';
 import { Link } from 'react-router-dom';
-import { ProductSize, ProductColor } from '@/types/product';
+import HomePage from './HomePage';
 
 const categories = [
   "Home",
@@ -37,54 +26,11 @@ const categories = [
   "Dupattas"
 ];
 
-// Updated product type with sizes and colors
-type StoreProduct = {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  category: string;
-  subcategory: string;
-  isNew?: boolean;
-  isSale?: boolean;
-  availableSizes?: ProductSize[];
-  availableColors?: ProductColor[];
-};
-
 const StoreFront: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { products } = useProductInventory();
-  const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
-  const [relatedProducts, setRelatedProducts] = useState<StoreProduct[]>([]);
   // Simple admin check (in a real app, use proper auth)
   const isAdmin = true; // Replace with actual auth logic
-  const [currentPage, setCurrentPage] = useState(1);
-  
-  useEffect(() => {
-    // Convert products from inventory into store products format
-    const available = products.filter(p => p.status === 'Active');
-    
-    const convertedProducts = available.map(product => ({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      originalPrice: product.originalPrice || (Math.random() > 0.5 ? product.price * 1.2 : undefined),
-      image: product.image || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300&h=450&fit=crop',
-      category: product.category,
-      subcategory: product.subcategory || 'Sub Category',
-      isNew: new Date(product.createdAt).getTime() > Date.now() - (30 * 24 * 60 * 60 * 1000), // New if less than 30 days old
-      isSale: Math.random() > 0.7, // Randomly mark some as on sale
-      availableSizes: ['XS', 'S', 'M', 'L', 'XL'] as ProductSize[],
-      availableColors: ['Red', 'Blue', 'Green', 'Yellow'] as ProductColor[]
-    }));
-    
-    setStoreProducts(convertedProducts);
-    
-    // Also set some related products (this would normally be based on current product)
-    setRelatedProducts(convertedProducts.slice(0, 4));
-  }, [products]);
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -134,19 +80,21 @@ const StoreFront: React.FC = () => {
               >
                 <Menu className="h-6 w-6" />
               </Button>
-              <h1 className="text-2xl font-script font-bold text-[#EC008C]">Fashiona</h1>
+              <Link to="/store">
+                <h1 className="text-2xl font-script font-bold text-[#EC008C]">Fashiona</h1>
+              </Link>
             </div>
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
               {categories.map(category => (
-                <a 
+                <Link 
                   key={category} 
-                  href="#" 
+                  to={`/store/categories/${category.toLowerCase()}`}
                   className={`text-sm hover:text-[#EC008C] transition-colors ${category === 'Kurthi' ? 'text-[#EC008C] font-medium' : ''}`}
                 >
                   {category}
-                </a>
+                </Link>
               ))}
             </nav>
             
@@ -162,30 +110,38 @@ const StoreFront: React.FC = () => {
                 />
               </div>
               
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
-              </Button>
+              <Link to="/store/account">
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
               
-              <Button variant="ghost" size="icon" className="relative">
-                <Heart className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 bg-[#EC008C] text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
-                  0
-                </span>
-              </Button>
+              <Link to="/store/wishlist">
+                <Button variant="ghost" size="icon" className="relative">
+                  <Heart className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 bg-[#EC008C] text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
+                    0
+                  </span>
+                </Button>
+              </Link>
               
-              <Button variant="ghost" size="icon" className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 bg-[#EC008C] text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
-                  3
-                </span>
-              </Button>
+              <Link to="/store/cart">
+                <Button variant="ghost" size="icon" className="relative">
+                  <ShoppingCart className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 bg-[#EC008C] text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
+                    3
+                  </span>
+                </Button>
+              </Link>
               
-              <Button
-                className="ml-2 bg-[#EC008C] hover:bg-[#D1007D]"
-                size="sm"
-              >
-                Login
-              </Button>
+              <Link to="/store/login">
+                <Button
+                  className="ml-2 bg-[#EC008C] hover:bg-[#D1007D]"
+                  size="sm"
+                >
+                  Login
+                </Button>
+              </Link>
               
               {isAdmin && (
                 <Link to="/">
@@ -228,235 +184,45 @@ const StoreFront: React.FC = () => {
         <div className="p-4">
           <nav className="space-y-4">
             {categories.map(category => (
-              <a 
-                key={category} 
-                href="#" 
+              <Link 
+                key={category}
+                to={`/store/categories/${category.toLowerCase()}`}
                 className="flex items-center justify-between py-2 border-b"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <span>{category}</span>
                 <ChevronRight className="h-5 w-5 text-gray-400" />
-              </a>
+              </Link>
             ))}
           </nav>
           
           <div className="mt-8 space-y-4">
-            <Button variant="outline" className="w-full justify-start">
-              <User className="h-4 w-4 mr-2" />
-              My Account
+            <Button variant="outline" className="w-full justify-start" asChild>
+              <Link to="/store/account" onClick={() => setMobileMenuOpen(false)}>
+                <User className="h-4 w-4 mr-2" />
+                My Account
+              </Link>
             </Button>
-            <Button variant="outline" className="w-full justify-start">
-              <Heart className="h-4 w-4 mr-2" />
-              Wishlist
+            <Button variant="outline" className="w-full justify-start" asChild>
+              <Link to="/store/wishlist" onClick={() => setMobileMenuOpen(false)}>
+                <Heart className="h-4 w-4 mr-2" />
+                Wishlist
+              </Link>
+            </Button>
+            <Button variant="outline" className="w-full justify-start" asChild>
+              <Link to="/store/cart" onClick={() => setMobileMenuOpen(false)}>
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Cart
+              </Link>
             </Button>
           </div>
         </div>
       </div>
       
-      {/* Hero Banner */}
-      <div className="relative">
-        <div className="bg-gray-800 bg-opacity-70 absolute inset-0 z-10"></div>
-        <img
-          src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1600&h=500&fit=crop"
-          alt="Fashion Collection"
-          className="w-full h-[400px] object-cover"
-        />
-        <div className="absolute inset-0 z-20 flex items-center justify-center text-center p-4">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-              Our Collections Are Not Sorted By Season <br className="hidden md:block" />— But By Emotion, Expression, And Identity.
-            </h1>
-          </div>
-        </div>
-      </div>
-      
-      {/* Product Grid Section */}
-      <section className="py-12 container mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Side Filter Panel */}
-          <div className="lg:col-span-1">
-            <div className="bg-white p-4 border rounded-lg shadow-sm">
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-3">CATEGORIES</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <a href="#" className="text-[#EC008C] font-medium">Kurtis</a>
-                    <span className="text-sm text-gray-500">21</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <a href="#" className="hover:text-[#EC008C]">Sarees</a>
-                    <span className="text-sm text-gray-500">15</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <a href="#" className="hover:text-[#EC008C]">Salwar Suits</a>
-                    <span className="text-sm text-gray-500">8</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-3">CHOOSE SIZE</h3>
-                <div className="flex flex-wrap gap-2">
-                  {['XS', 'S', 'M', 'L', 'XL'].map(size => (
-                    <button 
-                      key={size} 
-                      className={`w-8 h-8 border rounded-full flex items-center justify-center text-xs ${size === 'M' ? 'bg-[#EC008C] text-white border-[#EC008C]' : 'hover:border-[#EC008C]'}`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-3">CHOOSE COLOR</h3>
-                <div className="flex flex-wrap gap-2">
-                  <button className="w-6 h-6 rounded-full bg-violet-600 border border-gray-300"></button>
-                  <button className="w-6 h-6 rounded-full bg-blue-500 border border-gray-300"></button>
-                  <button className="w-6 h-6 rounded-full bg-pink-500 border border-gray-300"></button>
-                  <button className="w-6 h-6 rounded-full bg-green-600 border border-gray-300"></button>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-3">SELECT PRICE</h3>
-                <div className="mb-4">
-                  <input 
-                    type="range" 
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
-                    min="0" 
-                    max="5000"
-                    value="1500" 
-                  />
-                </div>
-                <div className="text-sm text-gray-600">
-                  <span>Price: ₹0 - ₹1,500</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Products */}
-          <div className="lg:col-span-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {storeProducts.map(product => (
-                <Card key={product.id} className="group overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200">
-                  <div className="relative">
-                    <AspectRatio ratio={3/4}>
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </AspectRatio>
-                    {product.isNew && (
-                      <Badge className="absolute top-2 left-2 bg-black text-white">New</Badge>
-                    )}
-                    {product.isSale && (
-                      <Badge className="absolute top-2 left-2 bg-[#EC008C] text-white">Sale</Badge>
-                    )}
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="absolute top-2 right-2 bg-white bg-opacity-80 text-gray-800 rounded-full shadow-sm hover:text-[#EC008C]"
-                    >
-                      <Heart className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="text-gray-500 text-xs mb-1">{product.subcategory}</div>
-                    <h3 className="font-medium">{product.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="font-semibold text-[#EC008C]">${product.price.toFixed(2)}</span>
-                      {product.originalPrice && (
-                        <span className="text-gray-400 line-through text-sm">
-                          ${product.originalPrice.toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {['S', 'M', 'L', 'XL'].map(size => (
-                        <span key={size} className="inline-block w-6 h-6 border text-xs flex items-center justify-center rounded-full">{size}</span>
-                      ))}
-                    </div>
-                    <div className="mt-3 flex justify-between items-center">
-                      <div className="flex gap-1">
-                        {['Red', 'Blue', 'Yellow', 'Green'].map((color, idx) => (
-                          <span 
-                            key={color} 
-                            className={`inline-block w-4 h-4 rounded-full ${
-                              color === 'Red' ? 'bg-red-500' :
-                              color === 'Blue' ? 'bg-blue-500' :
-                              color === 'Yellow' ? 'bg-yellow-500' :
-                              'bg-green-500'
-                            }`}
-                          ></span>
-                        ))}
-                      </div>
-                      <Button className="bg-[#EC008C] hover:bg-[#D1007D] text-xs h-8" size="sm">
-                        Add to Cart
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            
-            {/* Pagination */}
-            <div className="mt-8 flex justify-center">
-              <div className="flex items-center space-x-1">
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  className="w-8 h-8 p-0"
-                >
-                  &lt;
-                </Button>
-                <Button 
-                  variant="default"
-                  size="icon" 
-                  className="w-8 h-8 p-0 bg-[#EC008C]"
-                >
-                  1
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="icon" 
-                  className="w-8 h-8 p-0"
-                >
-                  2
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="icon" 
-                  className="w-8 h-8 p-0"
-                >
-                  3
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="icon" 
-                  className="w-8 h-8 p-0"
-                >
-                  &gt;
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Featured Quote */}
-      <section className="py-16 bg-pink-50">
-        <div className="container mx-auto px-4 text-center max-w-4xl">
-          <h2 className="text-3xl md:text-4xl font-medium mb-4 leading-tight">
-            When You Walk Into A Room, <br />Your Dress Should Speak Before You Do.
-          </h2>
-          <Button className="mt-4 bg-[#EC008C] hover:bg-[#D1007D]">
-            + Explore Your Signature Style
-          </Button>
-        </div>
-      </section>
+      {/* Main Content */}
+      <main className="flex-grow">
+        <HomePage />
+      </main>
       
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
@@ -485,19 +251,19 @@ const StoreFront: React.FC = () => {
               <div>
                 <h3 className="text-lg font-bold mb-4">Useful links</h3>
                 <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Home</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> About us</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Catalog</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Contact</a></li>
+                  <li><Link to="/store" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Home</Link></li>
+                  <li><Link to="/store/about" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> About us</Link></li>
+                  <li><Link to="/store/categories/all" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Catalog</Link></li>
+                  <li><Link to="/store/contact" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Contact</Link></li>
                 </ul>
               </div>
               
               <div>
                 <h3 className="text-lg font-bold mb-4">Terms And Policy's</h3>
                 <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Shipping policy</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Refund Policy</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Terms of Service</a></li>
+                  <li><Link to="/store/policies/shipping" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Shipping policy</Link></li>
+                  <li><Link to="/store/policies/refund" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Refund Policy</Link></li>
+                  <li><Link to="/store/policies/terms" className="hover:text-white transition-colors flex items-center"><ChevronRight className="h-3 w-3 mr-1" /> Terms of Service</Link></li>
                 </ul>
               </div>
             </div>
@@ -511,7 +277,7 @@ const StoreFront: React.FC = () => {
                 </li>
                 <li className="flex items-start">
                   <Mail className="h-5 w-5 mr-3 text-[#EC008C] flex-shrink-0" />
-                  <span>EMAIL: @gmail.com</span>
+                  <span>EMAIL: contact@fashiona.com</span>
                 </li>
                 <li className="flex items-start">
                   <MapPin className="h-5 w-5 mr-3 text-[#EC008C] flex-shrink-0" />

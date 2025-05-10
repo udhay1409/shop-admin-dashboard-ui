@@ -19,6 +19,13 @@ export interface Product {
   availableColors?: ProductColor[];
   originalPrice?: number;
   subcategory?: string;
+  rating?: number;
+  reviews?: number;
+  isNew?: boolean;
+  isSale?: boolean;
+  discountPercentage?: number;
+  trending?: boolean;
+  hotSelling?: boolean;
 }
 
 export interface ProductFormValues {
@@ -35,4 +42,11 @@ export interface ProductFormValues {
   availableColors?: ProductColor[];
   originalPrice?: number;
   subcategory?: string;
+  rating?: number;
+  reviews?: number;
+  isNew?: boolean;
+  isSale?: boolean;
+  discountPercentage?: number;
+  trending?: boolean;
+  hotSelling?: boolean;
 }

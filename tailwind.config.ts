@@ -73,6 +73,10 @@ export default {
 					chart: '#EC008C',
 					positive: '#22C55E', // Green for positive changes
 					negative: '#EF4444', // Red for negative changes
+				},
+				carousel: {
+					indicator: '#EC008C',
+					'indicator-inactive': 'rgba(255, 255, 255, 0.5)'
 				}
 			},
 			borderRadius: {
