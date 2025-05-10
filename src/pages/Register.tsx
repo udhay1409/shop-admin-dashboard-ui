@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -65,13 +64,11 @@ const Register = () => {
 
   const onSubmit = async (values: RegisterFormValues) => {
     try {
-      // Update the register call to match the expected parameters
-      // Assuming register expects (name, email, password, metadata?)
+      // Fix the register call to match the expected parameters in AuthContext
       const success = await register(
         values.email, 
         values.password, 
-        values.name, 
-        { name: values.name } // Pass name as metadata
+        values.name  // Pass name as a string, not as an object
       );
       
       if (success) {

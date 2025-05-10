@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   userRole: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
+  register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<boolean>;
   resetPassword: (newPassword: string) => Promise<boolean>;
@@ -143,9 +142,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Register function
-  const register = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
+  // Register function - updated to match the correct parameter types
+  const register = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
+      // Split the name into first_name and last_name (assuming format: "First Last")
+      const nameParts = name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -153,6 +157,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           data: {
             first_name: firstName,
             last_name: lastName,
+            full_name: name // Store the full name for easy access
           }
         }
       });
