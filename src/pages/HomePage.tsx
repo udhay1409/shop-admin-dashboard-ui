@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useStoreFrontProducts } from '@/hooks/useStoreFrontProducts';
 import ProductGrid from '@/components/store/ProductGrid';
+import { useToast } from '@/hooks/use-toast';
 
 const HomePage = () => {
   const { 
@@ -14,12 +15,30 @@ const HomePage = () => {
     loading,
     refreshProducts 
   } = useStoreFrontProducts();
+  
+  const { toast } = useToast();
 
   // Reload products when component mounts
   useEffect(() => {
     console.log('HomePage mounted, refreshing products');
     refreshProducts();
   }, [refreshProducts]);
+
+  useEffect(() => {
+    if (!loading && [
+      featuredProducts.length,
+      newArrivals.length,
+      trendingProducts.length,
+      hotSellingProducts.length,
+      saleProducts.length
+    ].every(len => len === 0)) {
+      toast({
+        title: "No products found",
+        description: "Please add some products in the admin dashboard",
+        variant: "destructive"
+      });
+    }
+  }, [loading, featuredProducts, newArrivals, trendingProducts, hotSellingProducts, saleProducts, toast]);
 
   return (
     <div className="min-h-screen">
@@ -72,14 +91,19 @@ const HomePage = () => {
         <div className="container mx-auto px-4">
           <h2 className="text-2xl font-medium text-gray-800 mb-8">Shop by Category</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {['Kurthi', 'Salwar Suits', 'Lehenga Cholis', 'Dupattas'].map((category, i) => (
+            {[
+              { name: 'Womens', slug: 'womens' },
+              { name: 'Mens', slug: 'mens' },
+              { name: 'Kids', slug: 'kids' },
+              { name: 'Sale', slug: 'sale' }
+            ].map((category, i) => (
               <Link 
                 key={i} 
-                to={`/store/categories/${category.toLowerCase().replace(' ', '-')}`}
+                to={`/store/categories/${category.slug.toLowerCase()}`}
                 className="group relative h-40 md:h-64 overflow-hidden rounded-lg bg-gray-200"
               >
                 <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center group-hover:bg-opacity-30 transition-all">
-                  <h3 className="text-white text-xl font-medium">{category}</h3>
+                  <h3 className="text-white text-xl font-medium">{category.name}</h3>
                 </div>
               </Link>
             ))}

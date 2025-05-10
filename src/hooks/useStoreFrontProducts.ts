@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +36,7 @@ export function useStoreFrontProducts() {
 
         if (error) {
           console.error('Error fetching new arrivals:', error);
-          return [];
+          throw error;
         }
         
         return data.map(formatProduct);
@@ -54,27 +54,63 @@ export function useStoreFrontProducts() {
 
         if (error) {
           console.error('Error fetching sale products:', error);
-          return [];
+          throw error;
         }
         
         return data.map(formatProduct);
       }
       
-      // Standard category lookup
-      const { data: categoryData } = await supabase
+      // First try to find the category by slug
+      const { data: categoryData, error: categoryError } = await supabase
         .from('categories')
-        .select('id')
-        .eq('slug', categorySlug)
+        .select('id, name, slug, parent_id')
+        .or(`slug.eq.${categorySlug},name.ilike.%${categorySlug.replace(/-/g, ' ')}%`)
         .maybeSingle();
+
+      if (categoryError) {
+        console.error('Error fetching category:', categoryError);
+        throw categoryError;
+      }
 
       if (!categoryData) {
         console.error('Category not found for slug:', categorySlug);
-        return [];
+        // Try a more flexible search by converting slug to name
+        const searchName = categorySlug.replace(/-/g, ' ');
+        const { data: flexData, error: flexError } = await supabase
+          .from('categories')
+          .select('id, name, slug')
+          .ilike('name', `%${searchName}%`)
+          .limit(1);
+
+        if (flexError || !flexData || flexData.length === 0) {
+          console.error('Category not found even with flexible search:', categorySlug);
+          return [];
+        }
+
+        const foundCategory = flexData[0];
+        console.log(`Found category using flexible search:`, foundCategory);
+
+        const { data: productsData, error: productsError } = await supabase
+          .from('products')
+          .select(`
+            *,
+            category:categories(name)
+          `)
+          .eq('category_id', foundCategory.id)
+          .eq('status', 'Active');
+
+        if (productsError) {
+          console.error('Error fetching category products:', productsError);
+          throw productsError;
+        }
+
+        console.log(`Found ${productsData.length} products for category "${foundCategory.name}"`);
+        return productsData.map(formatProduct);
       }
 
-      console.log('Found category ID:', categoryData.id);
+      console.log('Found category:', categoryData);
 
-      const { data, error } = await supabase
+      const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select(`
           *,
@@ -83,15 +119,20 @@ export function useStoreFrontProducts() {
         .eq('category_id', categoryData.id)
         .eq('status', 'Active');
 
-      if (error) {
-        console.error('Error fetching category products:', error);
-        return [];
+      if (productsError) {
+        console.error('Error fetching category products:', productsError);
+        throw productsError;
       }
 
-      console.log(`Found ${data.length} products for category ID ${categoryData.id}`);
-      return data.map(formatProduct);
+      console.log(`Found ${productsData.length} products for category "${categoryData.name}" (ID: ${categoryData.id})`);
+      return productsData.map(formatProduct);
     } catch (error) {
       console.error('Error in fetchProductsByCategory:', error);
+      toast({
+        title: 'Error',
+        description: 'Unable to load products. Please try again later.',
+        variant: 'destructive',
+      });
       return [];
     }
   };
@@ -113,7 +154,7 @@ export function useStoreFrontProducts() {
 
       if (error) {
         console.error('Error fetching product:', error);
-        return null;
+        throw error;
       }
 
       if (!data) {
@@ -121,10 +162,49 @@ export function useStoreFrontProducts() {
         return null;
       }
 
+      console.log('Product found:', data.name);
       return formatProduct(data);
     } catch (error) {
       console.error('Error in fetchProductById:', error);
+      toast({
+        title: 'Error',
+        description: 'Unable to load product details. Please try again later.',
+        variant: 'destructive',
+      });
       return null;
+    }
+  };
+
+  // Fetch related products
+  const fetchRelatedProducts = async (productId: string, categoryId: string | null): Promise<Product[]> => {
+    try {
+      if (!categoryId) {
+        return [];
+      }
+      
+      console.log(`Fetching related products for product ${productId} in category ${categoryId}`);
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          category:categories(name)
+        `)
+        .eq('category_id', categoryId)
+        .eq('status', 'Active')
+        .neq('id', productId)
+        .limit(4);
+
+      if (error) {
+        console.error('Error fetching related products:', error);
+        return [];
+      }
+
+      console.log(`Found ${data.length} related products`);
+      return data.map(formatProduct);
+    } catch (error) {
+      console.error('Error in fetchRelatedProducts:', error);
+      return [];
     }
   };
 
@@ -137,17 +217,23 @@ export function useStoreFrontProducts() {
           *,
           category:categories(name)
         `)
-        .eq('status', 'Active');
+        .eq('status', 'Active')
+        .limit(100);
 
       if (error) {
         console.error('Error fetching all products:', error);
-        return [];
+        throw error;
       }
 
       console.log(`Fetched ${data.length} total products`);
       return data.map(formatProduct);
     } catch (error) {
       console.error('Error in fetchAllProducts:', error);
+      toast({
+        title: 'Error',
+        description: 'Unable to load products. Please try again later.',
+        variant: 'destructive',
+      });
       return [];
     }
   };
@@ -166,12 +252,18 @@ export function useStoreFrontProducts() {
 
       if (error) {
         console.error('Error searching products:', error);
-        return [];
+        throw error;
       }
 
+      console.log(`Found ${data.length} products matching search: "${query}"`);
       return data.map(formatProduct);
     } catch (error) {
       console.error('Error in searchProducts:', error);
+      toast({
+        title: 'Error',
+        description: 'Unable to search products. Please try again later.',
+        variant: 'destructive',
+      });
       return [];
     }
   };
@@ -198,7 +290,7 @@ export function useStoreFrontProducts() {
   });
 
   // Load featured products
-  const loadFeaturedProducts = async () => {
+  const loadFeaturedProducts = useCallback(async () => {
     try {
       console.log('Loading featured products');
       // Get a mix of different product types
@@ -209,7 +301,6 @@ export function useStoreFrontProducts() {
           category:categories(name)
         `)
         .eq('status', 'Active')
-        .or('is_new.eq.true,trending.eq.true,hot_selling.eq.true')
         .limit(8);
 
       if (error) {
@@ -225,11 +316,12 @@ export function useStoreFrontProducts() {
         description: 'Failed to load featured products',
         variant: 'destructive',
       });
+      setFeaturedProducts([]);
     }
-  };
+  }, [toast]);
 
   // Load new arrivals
-  const loadNewArrivals = async () => {
+  const loadNewArrivals = useCallback(async () => {
     try {
       console.log('Loading new arrivals');
       const { data, error } = await supabase
@@ -251,11 +343,12 @@ export function useStoreFrontProducts() {
       setNewArrivals(data.map(formatProduct));
     } catch (error) {
       console.error('Error loading new arrivals:', error);
+      setNewArrivals([]);
     }
-  };
+  }, []);
 
   // Load trending products
-  const loadTrendingProducts = async () => {
+  const loadTrendingProducts = useCallback(async () => {
     try {
       console.log('Loading trending products');
       const { data, error } = await supabase
@@ -276,11 +369,12 @@ export function useStoreFrontProducts() {
       setTrendingProducts(data.map(formatProduct));
     } catch (error) {
       console.error('Error loading trending products:', error);
+      setTrendingProducts([]);
     }
-  };
+  }, []);
 
   // Load hot selling products
-  const loadHotSellingProducts = async () => {
+  const loadHotSellingProducts = useCallback(async () => {
     try {
       console.log('Loading hot selling products');
       const { data, error } = await supabase
@@ -301,11 +395,12 @@ export function useStoreFrontProducts() {
       setHotSellingProducts(data.map(formatProduct));
     } catch (error) {
       console.error('Error loading hot selling products:', error);
+      setHotSellingProducts([]);
     }
-  };
+  }, []);
 
   // Load sale products
-  const loadSaleProducts = async () => {
+  const loadSaleProducts = useCallback(async () => {
     try {
       console.log('Loading sale products');
       const { data, error } = await supabase
@@ -326,11 +421,12 @@ export function useStoreFrontProducts() {
       setSaleProducts(data.map(formatProduct));
     } catch (error) {
       console.error('Error loading sale products:', error);
+      setSaleProducts([]);
     }
-  };
+  }, []);
 
   // Load all product types at once
-  const loadAllProductTypes = async () => {
+  const loadAllProductTypes = useCallback(async () => {
     setLoading(true);
     try {
       await Promise.all([
@@ -342,15 +438,20 @@ export function useStoreFrontProducts() {
       ]);
     } catch (error) {
       console.error('Error loading product types:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load products',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [loadFeaturedProducts, loadNewArrivals, loadTrendingProducts, loadHotSellingProducts, loadSaleProducts, toast]);
 
   // Load data on mount
   useEffect(() => {
     loadAllProductTypes();
-  }, []);
+  }, [loadAllProductTypes]);
 
   return {
     featuredProducts,
@@ -362,6 +463,7 @@ export function useStoreFrontProducts() {
     fetchProductsByCategory,
     fetchProductById,
     fetchAllProducts,
+    fetchRelatedProducts,
     searchProducts,
     refreshProducts: loadAllProductTypes
   };

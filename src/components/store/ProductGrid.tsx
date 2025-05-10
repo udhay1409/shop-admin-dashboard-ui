@@ -3,6 +3,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '@/types/product';
 import { formatCurrency } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductGridProps {
   products: Product[];
@@ -19,6 +21,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   loading = false,
   columns = 4
 }) => {
+  const { toast } = useToast();
   const gridClass = {
     1: 'grid-cols-1',
     2: 'grid-cols-1 md:grid-cols-2',
@@ -59,6 +62,20 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     );
   }
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const target = e.target as HTMLImageElement;
+    target.src = 'https://placehold.co/400x500?text=No+Image';
+    // Only show toast once to avoid spamming
+    if (!target.dataset.errorHandled) {
+      target.dataset.errorHandled = 'true';
+      toast({
+        title: "Image not found",
+        description: "Using placeholder image instead",
+        variant: "default"
+      });
+    }
+  };
+
   return (
     <div className={title ? "py-8" : ""}>
       {title && (
@@ -83,10 +100,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                   src={product.image} 
                   alt={product.name} 
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = 'https://placehold.co/400x500?text=No+Image';
-                  }}
+                  onError={handleImageError}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center bg-gray-100">
