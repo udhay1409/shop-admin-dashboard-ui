@@ -55,6 +55,8 @@ export function AttributeManager({ productId, onAttributesChange, initialAttribu
   }, [selectedAttributes, notifyParent, isInitialized]);
 
   const handleAddAttribute = (attributeId: string) => {
+    if (!attributeId) return; // Protect against empty attributeId
+    
     if (!selectedAttributes.has(attributeId)) {
       setSelectedAttributes(prev => new Map(prev).set(attributeId, []));
       setEditingAttribute(attributeId);
@@ -207,6 +209,7 @@ export function AttributeManager({ productId, onAttributesChange, initialAttribu
               placeholder="Select attribute..."
               onValueChange={(value) => value && handleAddAttribute(value)}
               disabled={loading || comboboxItems.length === 0}
+              emptyMessage={loading ? "Loading attributes..." : "No attributes available"}
             />
           </div>
         </div>

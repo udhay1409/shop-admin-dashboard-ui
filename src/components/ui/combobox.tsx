@@ -28,7 +28,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  items,
+  items = [], // Default to empty array to avoid undefined
   value,
   onValueChange,
   placeholder = "Select an option",
@@ -38,14 +38,14 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
-  // Ensure items is always an array, even if undefined or null is passed
+  // Ensure items is always a valid array
   const safeItems = React.useMemo(() => {
     return Array.isArray(items) ? items : [];
   }, [items]);
 
   const selected = React.useMemo(() => {
-    return safeItems.find(item => item.value === value)
-  }, [safeItems, value])
+    return safeItems.find(item => item.value === value);
+  }, [safeItems, value]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -61,7 +61,7 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0 max-h-[300px] w-full">
+      <PopoverContent className="p-0 max-h-[300px] w-full bg-popover z-50">
         <Command>
           <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
           <CommandEmpty>{emptyMessage}</CommandEmpty>
