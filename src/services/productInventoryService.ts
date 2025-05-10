@@ -36,14 +36,27 @@ class ProductInventoryService {
         throw error;
       }
       
-      return data.map(location => ({
-        id: location.id,
-        name: location.name,
-        address: location.address && typeof location.address === 'object' ? 
-          (location.address.address as string || '') : 
-          (typeof location.address === 'string' ? location.address : ''),
-        is_active: location.is_active
-      }));
+      return data.map(location => {
+        // Safely extract address from JSONB field
+        let addressStr = '';
+        
+        if (location.address) {
+          if (typeof location.address === 'object') {
+            // It's a JSONB object from Supabase
+            addressStr = (location.address as any).address || '';
+          } else if (typeof location.address === 'string') {
+            // It's already a string
+            addressStr = location.address;
+          }
+        }
+        
+        return {
+          id: location.id,
+          name: location.name,
+          address: addressStr,
+          is_active: location.is_active
+        };
+      });
     } catch (error) {
       console.error("Failed to get warehouse locations:", error);
       throw error;
