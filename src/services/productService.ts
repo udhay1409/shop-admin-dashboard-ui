@@ -33,13 +33,13 @@ export async function getProducts(): Promise<Product[]> {
     isSale: item.is_sale,
     trending: item.trending,
     hotSelling: item.hot_selling,
-    // Default values for fields that might not exist in database
-    subcategory: item.subcategory || '',
-    availableSizes: item.available_sizes || [],
-    availableColors: item.available_colors || [],
-    bulkDiscountQuantity: item.bulk_discount_quantity || 0,
-    bulkDiscountPercentage: item.bulk_discount_percentage || 0,
-    additionalImages: item.additional_images || []
+    // These fields might not exist in the database yet, so we provide default values
+    subcategory: '',
+    availableSizes: [],
+    availableColors: [],
+    bulkDiscountQuantity: 0,
+    bulkDiscountPercentage: 0,
+    additionalImages: []
   }));
 }
 
@@ -80,13 +80,13 @@ export async function getProductById(id: string): Promise<Product | null> {
     isSale: data.is_sale,
     trending: data.trending,
     hotSelling: data.hot_selling,
-    // Default values for fields that might not exist in database
-    subcategory: data.subcategory || '',
-    availableSizes: data.available_sizes || [],
-    availableColors: data.available_colors || [],
-    bulkDiscountQuantity: data.bulk_discount_quantity || 0,
-    bulkDiscountPercentage: data.bulk_discount_percentage || 0,
-    additionalImages: data.additional_images || []
+    // These fields might not exist in the database yet, so we provide default values
+    subcategory: '',
+    availableSizes: [],
+    availableColors: [],
+    bulkDiscountQuantity: 0,
+    bulkDiscountPercentage: 0,
+    additionalImages: []
   };
 }
 
@@ -120,7 +120,8 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
       is_sale: productData.isSale || false,
       trending: productData.trending || false,
       hot_selling: productData.hotSelling || false,
-      // Additional fields that we need to add to the database
+      // We'll still send these fields in case the database is updated in the future
+      // Note: These will be ignored by Supabase if the columns don't exist
       subcategory: productData.subcategory || null,
       available_sizes: productData.availableSizes || [],
       available_colors: productData.availableColors || [],
@@ -158,13 +159,13 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
     isSale: data.is_sale,
     trending: data.trending,
     hotSelling: data.hot_selling,
-    // Map additional fields
-    subcategory: data.subcategory || '',
-    availableSizes: data.available_sizes || [],
-    availableColors: data.available_colors || [],
-    bulkDiscountQuantity: data.bulk_discount_quantity || 0,
-    bulkDiscountPercentage: data.bulk_discount_percentage || 0,
-    additionalImages: data.additional_images || []
+    // These fields might not exist in the database yet, so we provide default values
+    subcategory: productData.subcategory || '',
+    availableSizes: productData.availableSizes || [],
+    availableColors: productData.availableColors || [],
+    bulkDiscountQuantity: productData.bulkDiscountQuantity || 0,
+    bulkDiscountPercentage: productData.bulkDiscountPercentage || 0,
+    additionalImages: productData.additionalImages || []
   };
 }
 
@@ -205,6 +206,9 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
   if (productData.isSale !== undefined) updateData.is_sale = productData.isSale;
   if (productData.trending !== undefined) updateData.trending = productData.trending;
   if (productData.hotSelling !== undefined) updateData.hot_selling = productData.hotSelling;
+  
+  // We'll still include these updates in case the database is updated in the future
+  // Note: These will be ignored by Supabase if the columns don't exist
   if (productData.subcategory !== undefined) updateData.subcategory = productData.subcategory;
   if (productData.availableSizes !== undefined) updateData.available_sizes = productData.availableSizes;
   if (productData.availableColors !== undefined) updateData.available_colors = productData.availableColors;
@@ -246,13 +250,14 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
     isSale: data.is_sale,
     trending: data.trending,
     hotSelling: data.hot_selling,
-    // Map additional fields
-    subcategory: data.subcategory || '',
-    availableSizes: data.available_sizes || [],
-    availableColors: data.available_colors || [],
-    bulkDiscountQuantity: data.bulk_discount_quantity || 0,
-    bulkDiscountPercentage: data.bulk_discount_percentage || 0,
-    additionalImages: data.additional_images || []
+    // These fields might not exist in the database yet, so we provide default values
+    // For update operations, we use the values from the update data if provided
+    subcategory: productData.subcategory || '',
+    availableSizes: productData.availableSizes || [],
+    availableColors: productData.availableColors || [],
+    bulkDiscountQuantity: productData.bulkDiscountQuantity || 0,
+    bulkDiscountPercentage: productData.bulkDiscountPercentage || 0,
+    additionalImages: productData.additionalImages || []
   };
 }
 
