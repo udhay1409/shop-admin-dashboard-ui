@@ -15,6 +15,7 @@ import Delivery from "./pages/Delivery";
 import Customers from "./pages/Customers";
 import Vendors from "./pages/Vendors";
 import Inventory from "./pages/Inventory";
+import CouponCodes from "./pages/CouponCodes";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="customers" element={<Customers />} />
             <Route path="vendors" element={<Vendors />} />
             <Route path="inventory" element={<Inventory />} />
+            <Route path="coupon-code" element={<CouponCodes />} />
             <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
             {/* Other routes will be added as they're needed */}
             <Route path="*" element={<NotFound />} />
