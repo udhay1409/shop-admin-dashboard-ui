@@ -1,15 +1,16 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
 
 const profileFormSchema = z.object({
   username: z.string().min(2, {
@@ -26,12 +27,13 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const ProfileSettings: React.FC = () => {
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
   
   // Default values for the form
   const defaultValues: Partial<ProfileFormValues> = {
-    username: "admin",
-    email: "admin@example.com",
-    bio: "I manage this e-commerce store",
+    username: "",
+    email: "",
+    bio: "",
     avatar: "",
   };
 
@@ -40,11 +42,74 @@ const ProfileSettings: React.FC = () => {
     defaultValues,
   });
 
-  function onSubmit(data: ProfileFormValues) {
-    toast({
-      title: "Profile updated",
-      description: "Your profile information has been updated.",
-    });
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // Get profile data if it exists
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile) {
+          form.reset({
+            username: profile.first_name || "",
+            email: session.user.email || "",
+            bio: profile.bio || "",
+            avatar: profile.avatar_url || "",
+          });
+        } else {
+          // Set email from auth if profile not found
+          form.setValue('email', session.user.email || "");
+        }
+      }
+      
+      setLoading(false);
+    };
+    
+    fetchProfile();
+  }, [form]);
+
+  async function onSubmit(data: ProfileFormValues) {
+    try {
+      setLoading(true);
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) throw new Error("No authenticated user");
+      
+      // Update profile
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          first_name: data.username,
+          bio: data.bio,
+          updated_at: new Date().toISOString(),
+        });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile information has been updated.",
+      });
+      
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Update failed",
+        description: "There was a problem updating your profile.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -58,14 +123,14 @@ const ProfileSettings: React.FC = () => {
       <CardContent>
         <div className="flex items-center space-x-4 mb-6">
           <Avatar className="h-24 w-24">
-            <AvatarImage src="" alt="Admin" />
-            <AvatarFallback className="text-2xl">A</AvatarFallback>
+            <AvatarImage src={form.watch("avatar")} alt={form.watch("username")} />
+            <AvatarFallback className="text-2xl">{form.watch("username")?.charAt(0) || "A"}</AvatarFallback>
           </Avatar>
           <div className="space-y-2">
             <h3 className="font-medium">Profile Picture</h3>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">Upload New</Button>
-              <Button variant="outline" size="sm">Remove</Button>
+              <Button variant="outline" size="sm" disabled={loading}>Upload New</Button>
+              <Button variant="outline" size="sm" disabled={loading}>Remove</Button>
             </div>
           </div>
         </div>
@@ -125,7 +190,9 @@ const ProfileSettings: React.FC = () => {
               )}
             />
             <div className="flex justify-end">
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
           </form>
         </Form>

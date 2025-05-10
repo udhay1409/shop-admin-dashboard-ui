@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +9,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
+import { useEmailTemplates } from "@/hooks/useSettings";
+import { EmailTemplates as EmailTemplatesType } from "@/services/settingsService";
 
 const templateFormSchema = z.object({
   welcomeSubject: z.string().min(1, {
@@ -41,7 +42,7 @@ const templateFormSchema = z.object({
 type TemplateFormValues = z.infer<typeof templateFormSchema>;
 
 const EmailTemplatesSettings: React.FC = () => {
-  const { toast } = useToast();
+  const { settings, loading, saveSettings } = useEmailTemplates();
   const [activeTab, setActiveTab] = React.useState("welcome");
   
   const defaultValues: TemplateFormValues = {
@@ -85,16 +86,15 @@ const EmailTemplatesSettings: React.FC = () => {
     resolver: zodResolver(templateFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (settings && !loading) {
+      form.reset(settings as EmailTemplatesType);
+    }
+  }, [settings, loading, form]);
   
   function onSubmit(data: TemplateFormValues) {
-    // Save templates to localStorage
-    localStorage.setItem('emailTemplates', JSON.stringify(data));
-    
-    // Show success toast
-    toast({
-      title: "Email templates updated",
-      description: "Your email templates have been saved successfully.",
-    });
+    saveSettings(data);
   }
   
   return (
@@ -250,7 +250,9 @@ const EmailTemplatesSettings: React.FC = () => {
             </Tabs>
             
             <div className="flex justify-end">
-              <Button type="submit">Save Templates</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save Templates"}
+              </Button>
             </div>
           </form>
         </Form>

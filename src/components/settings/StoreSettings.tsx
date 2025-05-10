@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/components/ui/use-toast";
+import { useStoreSettings } from "@/hooks/useSettings";
+import { StoreSettings as StoreSettingsType } from "@/services/settingsService";
 
 const storeFormSchema = z.object({
   storeName: z.string().min(2, {
@@ -35,7 +36,7 @@ const storeFormSchema = z.object({
 type StoreFormValues = z.infer<typeof storeFormSchema>;
 
 const StoreSettings: React.FC = () => {
-  const { toast } = useToast();
+  const { settings, loading, saveSettings } = useStoreSettings();
   
   // Default values for the form
   const defaultValues: Partial<StoreFormValues> = {
@@ -53,11 +54,14 @@ const StoreSettings: React.FC = () => {
     defaultValues,
   });
 
+  useEffect(() => {
+    if (settings && !loading) {
+      form.reset(settings as StoreSettingsType);
+    }
+  }, [settings, loading, form]);
+
   function onSubmit(data: StoreFormValues) {
-    toast({
-      title: "Store settings updated",
-      description: "Your store settings have been updated successfully.",
-    });
+    saveSettings(data);
   }
 
   return (
@@ -199,7 +203,9 @@ const StoreSettings: React.FC = () => {
               )}
             />
             <div className="flex justify-end">
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
           </form>
         </Form>

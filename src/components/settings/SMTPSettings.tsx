@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,9 +8,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/components/ui/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import { sendEmail, getEmailConfig, saveEmailConfig } from "@/services/emailService";
+import { useSMTPSettings } from "@/hooks/useSettings";
+import { sendEmail } from "@/services/emailService";
+import { SMTPSettings as SMTPSettingsType } from "@/services/settingsService";
 
 const smtpFormSchema = z.object({
   host: z.string().min(1, {
@@ -40,21 +40,18 @@ const smtpFormSchema = z.object({
 type SMTPFormValues = z.infer<typeof smtpFormSchema>;
 
 const SMTPSettings: React.FC = () => {
-  const { toast } = useToast();
-  
-  // Load stored SMTP config or use defaults
-  const storedConfig = getEmailConfig();
+  const { settings, loading, saveSettings } = useSMTPSettings();
   
   // Default values for the form
   const defaultValues: SMTPFormValues = {
-    host: storedConfig.host,
-    port: storedConfig.port,
-    username: storedConfig.username,
-    password: storedConfig.password,
-    encryption: storedConfig.encryption,
-    fromEmail: storedConfig.fromEmail,
-    fromName: storedConfig.fromName,
-    enableSmtp: storedConfig.enableSmtp,
+    host: "",
+    port: 587,
+    username: "",
+    password: "",
+    encryption: "tls",
+    fromEmail: "",
+    fromName: "",
+    enableSmtp: false,
     useSendTest: false,
   };
 
@@ -62,6 +59,15 @@ const SMTPSettings: React.FC = () => {
     resolver: zodResolver(smtpFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (settings && !loading) {
+      form.reset({
+        ...settings as SMTPSettingsType,
+        useSendTest: false,
+      });
+    }
+  }, [settings, loading, form]);
 
   async function onSubmit(data: SMTPFormValues) {
     // Create a config object with all required properties
@@ -76,36 +82,17 @@ const SMTPSettings: React.FC = () => {
       enableSmtp: data.enableSmtp
     };
     
-    // Save SMTP settings to localStorage
-    saveEmailConfig(config);
+    // Save SMTP settings to database
+    const saved = await saveSettings(config);
     console.log("SMTP settings saved:", config);
-
-    // Show a success message
-    toast({
-      title: "SMTP settings updated",
-      description: "Your email settings have been updated successfully.",
-    });
     
-    // If sendTest is checked, send a test email
-    if (data.useSendTest) {
+    // If sendTest is checked and save was successful, send a test email
+    if (saved && data.useSendTest) {
       const testEmailSent = await sendEmail({
         to: data.fromEmail,
         subject: "Test Email from Your Store",
         body: `<h1>Test Email</h1><p>This is a test email from your store's SMTP configuration.</p>`
       }, config);
-      
-      if (testEmailSent) {
-        toast({
-          title: "Test email sent",
-          description: `A test email has been sent to ${data.fromEmail}`,
-        });
-      } else {
-        toast({
-          title: "Failed to send test email",
-          description: "Please check your SMTP configuration and try again.",
-          variant: "destructive",
-        });
-      }
     }
   }
 
@@ -284,7 +271,9 @@ const SMTPSettings: React.FC = () => {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit">Save SMTP Settings</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save SMTP Settings"}
+              </Button>
             </div>
           </form>
         </Form>

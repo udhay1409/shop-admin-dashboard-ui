@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { useNotificationSettings } from "@/hooks/useSettings";
+import { NotificationSettings as NotificationSettingsType } from "@/services/settingsService";
 
 const notificationFormSchema = z.object({
   emailOrderConfirmation: z.boolean().default(true),
@@ -24,7 +25,7 @@ const notificationFormSchema = z.object({
 type NotificationFormValues = z.infer<typeof notificationFormSchema>;
 
 const NotificationSettings: React.FC = () => {
-  const { toast } = useToast();
+  const { settings, loading, saveSettings } = useNotificationSettings();
   
   // Default values for the form
   const defaultValues: NotificationFormValues = {
@@ -43,11 +44,14 @@ const NotificationSettings: React.FC = () => {
     defaultValues,
   });
 
+  useEffect(() => {
+    if (settings && !loading) {
+      form.reset(settings as NotificationSettingsType);
+    }
+  }, [settings, loading, form]);
+
   function onSubmit(data: NotificationFormValues) {
-    toast({
-      title: "Notification settings updated",
-      description: "Your notification preferences have been saved.",
-    });
+    saveSettings(data);
   }
 
   return (
@@ -246,7 +250,9 @@ const NotificationSettings: React.FC = () => {
             </div>
             
             <div className="flex justify-end">
-              <Button type="submit">Save Preferences</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save Preferences"}
+              </Button>
             </div>
           </form>
         </Form>

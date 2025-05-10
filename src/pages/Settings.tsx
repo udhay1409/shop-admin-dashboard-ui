@@ -1,10 +1,10 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Settings, Store, CreditCard, Bell, Shield, Globe, Palette, Mail } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import ProfileSettings from "@/components/settings/ProfileSettings";
 import StoreSettings from "@/components/settings/StoreSettings";
 import PaymentSettings from "@/components/settings/PaymentSettings";
@@ -16,8 +16,30 @@ import SMTPSettings from "@/components/settings/SMTPSettings";
 import EmailTemplatesSettings from "@/components/settings/EmailTemplatesSettings";
 
 const SettingsPage: React.FC = () => {
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  // Check if user is authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        navigate("/auth");
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

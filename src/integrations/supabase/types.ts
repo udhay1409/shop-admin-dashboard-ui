@@ -878,6 +878,48 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles_settings: {
+        Row: {
+          appearance_settings: Json | null
+          created_at: string | null
+          email_templates: Json | null
+          id: string
+          localization_settings: Json | null
+          notification_settings: Json | null
+          payment_settings: Json | null
+          security_settings: Json | null
+          smtp_settings: Json | null
+          store_settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          appearance_settings?: Json | null
+          created_at?: string | null
+          email_templates?: Json | null
+          id: string
+          localization_settings?: Json | null
+          notification_settings?: Json | null
+          payment_settings?: Json | null
+          security_settings?: Json | null
+          smtp_settings?: Json | null
+          store_settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          appearance_settings?: Json | null
+          created_at?: string | null
+          email_templates?: Json | null
+          id?: string
+          localization_settings?: Json | null
+          notification_settings?: Json | null
+          payment_settings?: Json | null
+          security_settings?: Json | null
+          smtp_settings?: Json | null
+          store_settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       purchase_order_items: {
         Row: {
           cost_price: number
@@ -1267,6 +1309,10 @@ export type Database = {
           | { role_name: string }
           | { user_id: number; role_name: string }
           | { user_id: string; role: Database["public"]["Enums"]["app_role"] }
+        Returns: boolean
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
     }

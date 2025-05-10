@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useAppearanceSettings } from "@/hooks/useSettings";
+import { AppearanceSettings as AppearanceSettingsType } from "@/services/settingsService";
 
 const appearanceSchema = z.object({
   theme: z.enum(["light", "dark", "system"], {
@@ -33,7 +34,7 @@ const appearanceSchema = z.object({
 type AppearanceFormValues = z.infer<typeof appearanceSchema>;
 
 const AppearanceSettings: React.FC = () => {
-  const { toast } = useToast();
+  const { settings, loading, saveSettings } = useAppearanceSettings();
   
   // Default values for the form
   const defaultValues: AppearanceFormValues = {
@@ -51,11 +52,14 @@ const AppearanceSettings: React.FC = () => {
     defaultValues,
   });
 
+  useEffect(() => {
+    if (settings && !loading) {
+      form.reset(settings as AppearanceSettingsType);
+    }
+  }, [settings, loading, form]);
+
   function onSubmit(data: AppearanceFormValues) {
-    toast({
-      title: "Appearance settings updated",
-      description: "Your appearance preferences have been saved.",
-    });
+    saveSettings(data);
   }
 
   return (
@@ -265,8 +269,16 @@ const AppearanceSettings: React.FC = () => {
             </FormItem>
             
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline">Reset to Defaults</Button>
-              <Button type="submit">Save Changes</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => form.reset(defaultValues)}
+              >
+                Reset to Defaults
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
           </form>
         </Form>
