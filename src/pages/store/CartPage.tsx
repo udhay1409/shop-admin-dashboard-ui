@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ShoppingCart, X, Plus, Minus, ChevronRight } from 'lucide-react';
@@ -19,6 +19,8 @@ interface CartItem {
 
 const CartPage: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  
   // Mock cart items
   const [cartItems, setCartItems] = useState<CartItem[]>([
     {
@@ -92,6 +94,11 @@ const CartPage: React.FC = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleCheckout = () => {
+    // Pass cart items to checkout
+    navigate('/store/checkout');
   };
 
   const formatPrice = (price: number) => `$${price.toFixed(2)}`;
@@ -243,11 +250,12 @@ const CartPage: React.FC = () => {
                 </div>
               </div>
               
-              <Button asChild className="w-full mb-2 bg-[#EC008C] hover:bg-[#D1007D]">
-                <Link to="/store/checkout">
-                  Proceed to Checkout
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Link>
+              <Button 
+                onClick={handleCheckout}
+                className="w-full mb-2 bg-[#EC008C] hover:bg-[#D1007D]"
+              >
+                Proceed to Checkout
+                <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
               
               <div className="text-xs text-center text-gray-500">

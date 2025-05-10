@@ -11,11 +11,34 @@ import { useToast } from '@/hooks/use-toast';
 import BreadcrumbNav from '@/components/store/BreadcrumbNav';
 import { Card, CardContent } from '@/components/ui/card';
 
+interface ShippingAddress {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+}
+
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("razorpay");
+  const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'India'
+  });
   
   // Sample cart items
   const cartItems = [
@@ -44,13 +67,49 @@ const CheckoutPage: React.FC = () => {
   const shippingCost = subtotal >= 100 ? 0 : 9.99;
   const total = subtotal + shippingCost;
   
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setShippingAddress(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  };
+
   const handleSubmitOrder = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
+    // Validate form
+    if (!shippingAddress.firstName || !shippingAddress.lastName || !shippingAddress.email || 
+        !shippingAddress.phone || !shippingAddress.address || !shippingAddress.city || 
+        !shippingAddress.state || !shippingAddress.zipCode || !shippingAddress.country) {
+      toast({
+        title: "Please fill all required fields",
+        variant: "destructive"
+      });
+      setLoading(false);
+      return;
+    }
+    
     // Simulate payment processing
     setTimeout(() => {
       setLoading(false);
+      
+      // Create order details to pass to confirmation page
+      const orderDetails = {
+        items: cartItems,
+        subtotal: subtotal,
+        shipping: shippingCost,
+        total: total,
+        address: {
+          street: shippingAddress.address,
+          city: shippingAddress.city,
+          state: shippingAddress.state,
+          zipCode: shippingAddress.zipCode,
+          country: shippingAddress.country
+        },
+        paymentMethod: paymentMethod === "razorpay" ? "Razorpay" : "Cash on Delivery"
+      };
       
       // In a real app, you would integrate with Razorpay here
       if (paymentMethod === "razorpay") {
@@ -59,13 +118,13 @@ const CheckoutPage: React.FC = () => {
           title: "Payment successful!",
           description: "Your order has been placed successfully.",
         });
-        navigate("/store/order-confirmation");
+        navigate("/store/order-confirmation", { state: { orderDetails } });
       } else {
         toast({
           title: "Order placed",
           description: "Your order has been placed successfully with cash on delivery.",
         });
-        navigate("/store/order-confirmation");
+        navigate("/store/order-confirmation", { state: { orderDetails } });
       }
     }, 2000);
   };
@@ -96,39 +155,95 @@ const CheckoutPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" placeholder="First name" required />
+                  <Input 
+                    id="firstName" 
+                    placeholder="First name" 
+                    value={shippingAddress.firstName}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
                 <div>
                   <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" placeholder="Last name" required />
+                  <Input 
+                    id="lastName" 
+                    placeholder="Last name" 
+                    value={shippingAddress.lastName}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" placeholder="Email address" required />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="Email address" 
+                    value={shippingAddress.email}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" placeholder="Phone number" required />
+                  <Input 
+                    id="phone" 
+                    placeholder="Phone number" 
+                    value={shippingAddress.phone}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <Label htmlFor="address">Street Address</Label>
-                  <Input id="address" placeholder="Street address" required />
+                  <Input 
+                    id="address" 
+                    placeholder="Street address" 
+                    value={shippingAddress.address}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
                 <div>
                   <Label htmlFor="city">City</Label>
-                  <Input id="city" placeholder="City" required />
+                  <Input 
+                    id="city" 
+                    placeholder="City" 
+                    value={shippingAddress.city}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
                 <div>
                   <Label htmlFor="state">State</Label>
-                  <Input id="state" placeholder="State" required />
+                  <Input 
+                    id="state" 
+                    placeholder="State" 
+                    value={shippingAddress.state}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
                 <div>
                   <Label htmlFor="zipCode">ZIP Code</Label>
-                  <Input id="zipCode" placeholder="ZIP code" required />
+                  <Input 
+                    id="zipCode" 
+                    placeholder="ZIP code" 
+                    value={shippingAddress.zipCode}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
                 <div>
                   <Label htmlFor="country">Country</Label>
-                  <Input id="country" placeholder="Country" defaultValue="India" required />
+                  <Input 
+                    id="country" 
+                    placeholder="Country" 
+                    defaultValue="India" 
+                    value={shippingAddress.country}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
               </div>
             </div>
