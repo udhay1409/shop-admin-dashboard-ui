@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DeliveryAutomationFlow from '@/components/DeliveryAutomationFlow';
 import { 
   Card, 
@@ -27,7 +26,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { Truck, Package, Check, Clock, MapPin, X } from 'lucide-react';
+import { Truck, Package, Check, Clock, MapPin, X, Loader2 } from 'lucide-react';
+import { 
+  getActiveDeliveries, 
+  getDeliveryStats, 
+  assignCourier, 
+  updateDeliveryStatus,
+  DeliveryItem
+} from '@/services/deliveryService';
 
 interface DeliveryItem {
   id: string;
@@ -40,39 +46,46 @@ interface DeliveryItem {
 }
 
 const Delivery: React.FC = () => {
-  const [activeDeliveries, setActiveDeliveries] = useState<DeliveryItem[]>([
-    {
-      id: 'DLV1001',
-      orderId: 'ORD1002',
-      customerName: 'Rahul Mehra',
-      address: '456 Park Street, Mumbai, Maharashtra',
-      status: 'Awaiting Dispatch',
-      estimatedDelivery: '12 May 2025',
-    },
-    {
-      id: 'DLV1002',
-      orderId: 'ORD1003',
-      customerName: 'Anjali Patel',
-      address: '789 Gandhi Road, Ahmedabad, Gujarat',
-      status: 'Out for Delivery',
-      estimatedDelivery: '12 May 2025',
-      assignedCourier: 'Raj Kumar'
-    },
-    {
-      id: 'DLV1003',
-      orderId: 'ORD1008',
-      customerName: 'Neha Verma',
-      address: '765 Koregaon Park, Pune, Maharashtra',
-      status: 'Awaiting Dispatch',
-      estimatedDelivery: '15 May 2025',
-    },
-  ]);
-  
+  const [activeDeliveries, setActiveDeliveries] = useState<DeliveryItem[]>([]);
+  const [deliveryStats, setDeliveryStats] = useState({
+    awaitingDispatch: 0,
+    outForDelivery: 0,
+    delivered: 0
+  });
+  const [loading, setLoading] = useState(true);
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryItem | null>(null);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [courierName, setCourierName] = useState('');
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [processingAction, setProcessingAction] = useState(false);
+  
+  // Load delivery data
+  useEffect(() => {
+    async function loadDeliveryData() {
+      setLoading(true);
+      try {
+        const [deliveries, stats] = await Promise.all([
+          getActiveDeliveries(),
+          getDeliveryStats()
+        ]);
+        
+        setActiveDeliveries(deliveries);
+        setDeliveryStats(stats);
+      } catch (error) {
+        console.error('Error loading delivery data:', error);
+        toast({
+          title: 'Failed to load delivery data',
+          description: 'Please check your connection and try again',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadDeliveryData();
+  }, []);
   
   const getStatusIcon = (status: string) => {
     switch(status) {
@@ -99,7 +112,7 @@ const Delivery: React.FC = () => {
     setIsUpdateDialogOpen(true);
   };
   
-  const confirmAssignment = () => {
+  const confirmAssignment = async () => {
     if (!selectedDelivery || !courierName.trim()) {
       toast({
         title: "Error",
@@ -109,54 +122,96 @@ const Delivery: React.FC = () => {
       return;
     }
     
-    setActiveDeliveries(deliveries => 
-      deliveries.map(d => 
-        d.id === selectedDelivery.id 
-          ? { ...d, assignedCourier: courierName, status: 'Out for Delivery' } 
-          : d
-      )
-    );
+    setProcessingAction(true);
     
-    toast({
-      title: "Courier Assigned",
-      description: `${courierName} has been assigned to delivery ${selectedDelivery.id}`,
-      variant: "default",
-    });
-    
-    setCourierName('');
-    setIsAssignDialogOpen(false);
+    try {
+      const success = await assignCourier(selectedDelivery.orderId, courierName);
+      
+      if (success) {
+        // Update local state to reflect changes
+        setActiveDeliveries(deliveries => 
+          deliveries.map(d => 
+            d.id === selectedDelivery.id 
+              ? { ...d, assignedCourier: courierName, status: 'Out for Delivery' } 
+              : d
+          )
+        );
+        
+        // Update delivery stats
+        setDeliveryStats(prev => ({
+          ...prev,
+          awaitingDispatch: Math.max(0, prev.awaitingDispatch - 1),
+          outForDelivery: prev.outForDelivery + 1
+        }));
+        
+        toast({
+          title: "Courier Assigned",
+          description: `${courierName} has been assigned to delivery ${selectedDelivery.id}`,
+        });
+      }
+    } finally {
+      setCourierName('');
+      setIsAssignDialogOpen(false);
+      setProcessingAction(false);
+    }
   };
   
-  const confirmStatusUpdate = (newStatus: DeliveryItem['status']) => {
+  const confirmStatusUpdate = async (newStatus: DeliveryItem['status']) => {
     if (!selectedDelivery) return;
     
-    setActiveDeliveries(deliveries => 
-      deliveries.map(d => 
-        d.id === selectedDelivery.id 
-          ? { ...d, status: newStatus } 
-          : d
-      )
-    );
+    setProcessingAction(true);
     
-    let message = '';
-    
-    switch(newStatus) {
-      case 'Delivered':
-        message = `Delivery ${selectedDelivery.id} marked as delivered`;
-        break;
-      case 'Failed Delivery':
-        message = `Delivery ${selectedDelivery.id} marked as failed. A new attempt will be scheduled.`;
-        break;
+    try {
+      const success = await updateDeliveryStatus(
+        selectedDelivery.orderId, 
+        newStatus,
+        deliveryNotes.trim() || undefined
+      );
+      
+      if (success) {
+        // Update local state to reflect changes
+        setActiveDeliveries(deliveries => {
+          if (newStatus === 'Delivered') {
+            // If delivered, remove from active deliveries
+            return deliveries.filter(d => d.id !== selectedDelivery.id);
+          } else {
+            // Otherwise update status
+            return deliveries.map(d => 
+              d.id === selectedDelivery.id ? { ...d, status: newStatus } : d
+            );
+          }
+        });
+        
+        // Update delivery stats
+        if (newStatus === 'Delivered') {
+          setDeliveryStats(prev => ({
+            ...prev,
+            outForDelivery: Math.max(0, prev.outForDelivery - 1),
+            delivered: prev.delivered + 1
+          }));
+        }
+        
+        let message = '';
+        switch(newStatus) {
+          case 'Delivered':
+            message = `Delivery ${selectedDelivery.id} marked as delivered`;
+            break;
+          case 'Failed Delivery':
+            message = `Delivery ${selectedDelivery.id} marked as failed. A new attempt will be scheduled.`;
+            break;
+        }
+        
+        toast({
+          title: "Status Updated",
+          description: message,
+          variant: newStatus === 'Failed Delivery' ? "destructive" : "default",
+        });
+      }
+    } finally {
+      setDeliveryNotes('');
+      setIsUpdateDialogOpen(false);
+      setProcessingAction(false);
     }
-    
-    toast({
-      title: "Status Updated",
-      description: message,
-      variant: newStatus === 'Delivered' ? "default" : "destructive",
-    });
-    
-    setDeliveryNotes('');
-    setIsUpdateDialogOpen(false);
   };
   
   return (
@@ -180,7 +235,12 @@ const Delivery: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {activeDeliveries.filter(d => d.status === 'Awaiting Dispatch').length}
+              {loading ? (
+                <div className="flex items-center">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin text-gray-500" />
+                  <span className="text-gray-500">Loading...</span>
+                </div>
+              ) : deliveryStats.awaitingDispatch}
             </div>
           </CardContent>
         </Card>
@@ -197,7 +257,12 @@ const Delivery: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {activeDeliveries.filter(d => d.status === 'Out for Delivery').length}
+              {loading ? (
+                <div className="flex items-center">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin text-gray-500" />
+                  <span className="text-gray-500">Loading...</span>
+                </div>
+              ) : deliveryStats.outForDelivery}
             </div>
           </CardContent>
         </Card>
@@ -214,7 +279,12 @@ const Delivery: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {activeDeliveries.filter(d => d.status === 'Delivered').length}
+              {loading ? (
+                <div className="flex items-center">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin text-gray-500" />
+                  <span className="text-gray-500">Loading...</span>
+                </div>
+              ) : deliveryStats.delivered}
             </div>
           </CardContent>
         </Card>
@@ -228,64 +298,81 @@ const Delivery: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Order</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Est. Delivery</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {activeDeliveries.map((delivery) => (
-                <TableRow key={delivery.id}>
-                  <TableCell className="font-medium">{delivery.id}</TableCell>
-                  <TableCell>{delivery.orderId}</TableCell>
-                  <TableCell>{delivery.customerName}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{delivery.address}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(delivery.status)}
-                      <span>{delivery.status}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{delivery.estimatedDelivery}</TableCell>
-                  <TableCell>
-                    {delivery.assignedCourier || (
-                      <span className="text-gray-400">Not assigned</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {delivery.status === 'Awaiting Dispatch' && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleAssignDelivery(delivery)}
-                        className="bg-pink-500 hover:bg-pink-600"
-                      >
-                        Assign Courier
-                      </Button>
-                    )}
-                    
-                    {delivery.status === 'Out for Delivery' && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleUpdateStatus(delivery)}
-                        variant="outline"
-                        className="border-green-500 text-green-600 hover:bg-green-50"
-                      >
-                        Update Status
-                      </Button>
-                    )}
-                  </TableCell>
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <div className="flex flex-col items-center">
+                <Loader2 className="h-8 w-8 animate-spin text-pink-500 mb-2" />
+                <p className="text-gray-500">Loading deliveries...</p>
+              </div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Address</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Est. Delivery</TableHead>
+                  <TableHead>Assigned To</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {activeDeliveries.length > 0 ? (
+                  activeDeliveries.map((delivery) => (
+                    <TableRow key={delivery.id}>
+                      <TableCell className="font-medium">{delivery.id}</TableCell>
+                      <TableCell>{delivery.orderId}</TableCell>
+                      <TableCell>{delivery.customerName}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{delivery.address}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(delivery.status || '')}
+                          <span>{delivery.status}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{delivery.estimatedDelivery || 'Not set'}</TableCell>
+                      <TableCell>
+                        {delivery.assignedCourier || (
+                          <span className="text-gray-400">Not assigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {delivery.status === 'Awaiting Dispatch' && (
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleAssignDelivery(delivery)}
+                            className="bg-pink-500 hover:bg-pink-600"
+                          >
+                            Assign Courier
+                          </Button>
+                        )}
+                        
+                        {delivery.status === 'Out for Delivery' && (
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleUpdateStatus(delivery)}
+                            variant="outline"
+                            className="border-green-500 text-green-600 hover:bg-green-50"
+                          >
+                            Update Status
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                      No active deliveries found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
       
@@ -330,14 +417,23 @@ const Delivery: React.FC = () => {
             <Button 
               variant="outline" 
               onClick={() => setIsAssignDialogOpen(false)}
+              disabled={processingAction}
             >
               Cancel
             </Button>
             <Button 
               onClick={confirmAssignment}
               className="bg-pink-500 hover:bg-pink-600"
+              disabled={processingAction}
             >
-              Assign & Dispatch
+              {processingAction ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Assign & Dispatch'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -371,16 +467,26 @@ const Delivery: React.FC = () => {
                 variant="outline"
                 className="border-red-200 text-red-600 hover:bg-red-50"
                 onClick={() => confirmStatusUpdate('Failed Delivery')}
+                disabled={processingAction}
               >
-                <X className="mr-2 h-4 w-4" />
+                {processingAction ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <X className="mr-2 h-4 w-4" />
+                )}
                 Failed Delivery
               </Button>
               
               <Button
                 className="bg-green-600 hover:bg-green-700"
                 onClick={() => confirmStatusUpdate('Delivered')}
+                disabled={processingAction}
               >
-                <Check className="mr-2 h-4 w-4" />
+                {processingAction ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="mr-2 h-4 w-4" />
+                )}
                 Mark as Delivered
               </Button>
             </div>
