@@ -30,6 +30,11 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   if (loading) {
     return (
       <div className="py-8">
+        {title && (
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-medium text-gray-800">{title}</h2>
+          </div>
+        )}
         <div className={`animate-pulse grid ${gridClass} gap-6`}>
           {[...Array(8)].map((_, index) => (
             <div key={index} className="bg-gray-100 rounded-lg overflow-hidden">
@@ -78,6 +83,10 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                   src={product.image} 
                   alt={product.name} 
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://placehold.co/400x500?text=No+Image';
+                  }}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center bg-gray-100">

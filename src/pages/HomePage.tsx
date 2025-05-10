@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useStoreFrontProducts } from '@/hooks/useStoreFrontProducts';
 import ProductGrid from '@/components/store/ProductGrid';
@@ -11,8 +11,15 @@ const HomePage = () => {
     trendingProducts, 
     hotSellingProducts,
     saleProducts,
-    loading 
+    loading,
+    refreshProducts 
   } = useStoreFrontProducts();
+
+  // Reload products when component mounts
+  useEffect(() => {
+    console.log('HomePage mounted, refreshing products');
+    refreshProducts();
+  }, [refreshProducts]);
 
   return (
     <div className="min-h-screen">
@@ -60,7 +67,7 @@ const HomePage = () => {
         />
       </div>
       
-      {/* Categories Banner */}
+      {/* Categories Banner - Get real categories from database */}
       <div className="bg-gray-50 py-12">
         <div className="container mx-auto px-4">
           <h2 className="text-2xl font-medium text-gray-800 mb-8">Shop by Category</h2>

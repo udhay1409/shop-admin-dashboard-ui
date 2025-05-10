@@ -16,13 +16,63 @@ export function useStoreFrontProducts() {
   // Fetch products by category
   const fetchProductsByCategory = async (categorySlug: string): Promise<Product[]> => {
     try {
+      console.log('Fetching products for category slug:', categorySlug);
+      
+      // Handle special cases
+      if (categorySlug === 'all') {
+        return fetchAllProducts();
+      }
+      
+      if (categorySlug === 'new-arrivals') {
+        const { data, error } = await supabase
+          .from('products')
+          .select(`
+            *,
+            category:categories(name)
+          `)
+          .eq('status', 'Active')
+          .eq('is_new', true)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching new arrivals:', error);
+          return [];
+        }
+        
+        return data.map(formatProduct);
+      }
+      
+      if (categorySlug === 'sale') {
+        const { data, error } = await supabase
+          .from('products')
+          .select(`
+            *,
+            category:categories(name)
+          `)
+          .eq('status', 'Active')
+          .eq('is_sale', true);
+
+        if (error) {
+          console.error('Error fetching sale products:', error);
+          return [];
+        }
+        
+        return data.map(formatProduct);
+      }
+      
+      // Standard category lookup
       const { data: categoryData } = await supabase
         .from('categories')
         .select('id')
         .eq('slug', categorySlug)
-        .single();
+        .maybeSingle();
 
-      if (!categoryData) return [];
+      if (!categoryData) {
+        console.error('Category not found for slug:', categorySlug);
+        return [];
+      }
+
+      console.log('Found category ID:', categoryData.id);
 
       const { data, error } = await supabase
         .from('products')
@@ -38,6 +88,7 @@ export function useStoreFrontProducts() {
         return [];
       }
 
+      console.log(`Found ${data.length} products for category ID ${categoryData.id}`);
       return data.map(formatProduct);
     } catch (error) {
       console.error('Error in fetchProductsByCategory:', error);
@@ -48,6 +99,8 @@ export function useStoreFrontProducts() {
   // Fetch a single product by ID
   const fetchProductById = async (productId: string): Promise<Product | null> => {
     try {
+      console.log('Fetching product with ID:', productId);
+      
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -56,10 +109,15 @@ export function useStoreFrontProducts() {
         `)
         .eq('id', productId)
         .eq('status', 'Active')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching product:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.error('Product not found for ID:', productId);
         return null;
       }
 
@@ -86,6 +144,7 @@ export function useStoreFrontProducts() {
         return [];
       }
 
+      console.log(`Fetched ${data.length} total products`);
       return data.map(formatProduct);
     } catch (error) {
       console.error('Error in fetchAllProducts:', error);
@@ -140,8 +199,8 @@ export function useStoreFrontProducts() {
 
   // Load featured products
   const loadFeaturedProducts = async () => {
-    setLoading(true);
     try {
+      console.log('Loading featured products');
       // Get a mix of different product types
       const { data, error } = await supabase
         .from('products')
@@ -157,6 +216,7 @@ export function useStoreFrontProducts() {
         throw error;
       }
 
+      console.log(`Loaded ${data.length} featured products`);
       setFeaturedProducts(data.map(formatProduct));
     } catch (error) {
       console.error('Error loading featured products:', error);
@@ -165,14 +225,13 @@ export function useStoreFrontProducts() {
         description: 'Failed to load featured products',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   // Load new arrivals
   const loadNewArrivals = async () => {
     try {
+      console.log('Loading new arrivals');
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -188,6 +247,7 @@ export function useStoreFrontProducts() {
         throw error;
       }
 
+      console.log(`Loaded ${data.length} new arrivals`);
       setNewArrivals(data.map(formatProduct));
     } catch (error) {
       console.error('Error loading new arrivals:', error);
@@ -197,6 +257,7 @@ export function useStoreFrontProducts() {
   // Load trending products
   const loadTrendingProducts = async () => {
     try {
+      console.log('Loading trending products');
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -211,6 +272,7 @@ export function useStoreFrontProducts() {
         throw error;
       }
 
+      console.log(`Loaded ${data.length} trending products`);
       setTrendingProducts(data.map(formatProduct));
     } catch (error) {
       console.error('Error loading trending products:', error);
@@ -220,6 +282,7 @@ export function useStoreFrontProducts() {
   // Load hot selling products
   const loadHotSellingProducts = async () => {
     try {
+      console.log('Loading hot selling products');
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -234,6 +297,7 @@ export function useStoreFrontProducts() {
         throw error;
       }
 
+      console.log(`Loaded ${data.length} hot selling products`);
       setHotSellingProducts(data.map(formatProduct));
     } catch (error) {
       console.error('Error loading hot selling products:', error);
@@ -243,6 +307,7 @@ export function useStoreFrontProducts() {
   // Load sale products
   const loadSaleProducts = async () => {
     try {
+      console.log('Loading sale products');
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -251,13 +316,13 @@ export function useStoreFrontProducts() {
         `)
         .eq('status', 'Active')
         .eq('is_sale', true)
-        .not('discount_percentage', 'is', null)
         .limit(8);
 
       if (error) {
         throw error;
       }
 
+      console.log(`Loaded ${data.length} sale products`);
       setSaleProducts(data.map(formatProduct));
     } catch (error) {
       console.error('Error loading sale products:', error);

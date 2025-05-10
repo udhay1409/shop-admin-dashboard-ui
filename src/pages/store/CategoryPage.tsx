@@ -41,7 +41,9 @@ const CategoryPage = () => {
       setCategoryName(formattedName);
       
       try {
+        console.log(`Loading products for category: ${categorySlug}`);
         const categoryProducts = await fetchProductsByCategory(categorySlug);
+        console.log(`Loaded ${categoryProducts.length} products for category: ${categorySlug}`);
         setProducts(categoryProducts);
       } catch (error) {
         console.error('Error loading category products:', error);

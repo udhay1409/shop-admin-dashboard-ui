@@ -26,26 +26,30 @@ const ProductDetailPage = () => {
       
       setLoading(true);
       try {
+        console.log(`Loading product with ID: ${productId}`);
         const fetchedProduct = await fetchProductById(productId);
         
         if (fetchedProduct) {
+          console.log('Product found:', fetchedProduct.name);
           setProduct(fetchedProduct);
           
           // Load related products from same category
           if (fetchedProduct.category) {
-            const categoryProducts = await fetchProductsByCategory(
-              fetchedProduct.category.toLowerCase().replace(' ', '-')
-            );
+            console.log(`Loading related products for category: ${fetchedProduct.category}`);
+            const categorySlug = fetchedProduct.category.toLowerCase().replace(' ', '-');
+            const categoryProducts = await fetchProductsByCategory(categorySlug);
             
             // Filter out the current product and limit to 4 products
             const related = categoryProducts
               .filter(p => p.id !== fetchedProduct.id)
               .slice(0, 4);
               
+            console.log(`Found ${related.length} related products`);
             setRelatedProducts(related);
           }
         } else {
           // Product not found
+          console.error('Product not found for ID:', productId);
           toast({
             title: "Product not found",
             description: "The requested product could not be found.",
