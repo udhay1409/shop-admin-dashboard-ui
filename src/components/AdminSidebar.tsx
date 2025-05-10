@@ -20,7 +20,8 @@ import {
   ChevronRight,
   Warehouse,
   Boxes,
-  TicketPercent
+  TicketPercent,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -133,7 +134,7 @@ const AdminSidebar = () => {
         <div className="mt-4 border-t border-gray-200 pt-4">
           <ul className="space-y-1">
             <SidebarItem to="/coupon-code" icon={TicketPercent} text="Coupon code" />
-            <SidebarItem to="/reviews" icon={Star} text="Reviews" />
+            <SidebarItem to="/reviews" icon={MessageSquare} text="Reviews" badge={3} />
             <SidebarItem to="/transaction-logs" icon={Receipt} text="Transactions" />
             <SidebarItem to="/reports" icon={BarChart2} text="Reports" />
             <SidebarItem to="/payments" icon={CreditCard} text="Payments" />
