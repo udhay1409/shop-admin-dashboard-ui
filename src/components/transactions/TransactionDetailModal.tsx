@@ -10,8 +10,32 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Receipt, CreditCard, User, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
 
+interface Transaction {
+  id: string;
+  orderId: string;
+  amount: number;
+  status: string;
+  method: string;
+  email: string;
+  contact: string;
+  created: Date;
+  card?: {
+    last4: string;
+    network: string;
+  };
+  upi?: {
+    vpa: string;
+  };
+  bank?: {
+    name: string;
+  };
+  wallet?: {
+    name: string;
+  };
+}
+
 interface TransactionDetailModalProps {
-  transaction: any;
+  transaction: Transaction;
   isOpen: boolean;
   onClose: () => void;
   formatAmount: (amount: number) => string;

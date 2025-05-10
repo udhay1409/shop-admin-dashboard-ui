@@ -25,8 +25,38 @@ import { Receipt, FileText, CreditCard } from "lucide-react";
 import TransactionDetailModal from '@/components/transactions/TransactionDetailModal';
 import { useQuery } from '@tanstack/react-query';
 
+// Define transaction type
+interface Transaction {
+  id: string;
+  orderId: string;
+  amount: number;
+  status: string;
+  method: string;
+  email: string;
+  contact: string;
+  created: Date;
+  card?: {
+    last4: string;
+    network: string;
+  };
+  upi?: {
+    vpa: string;
+  };
+  bank?: {
+    name: string;
+  };
+  wallet?: {
+    name: string;
+  };
+}
+
+interface TransactionsResponse {
+  transactions: Transaction[];
+  total: number;
+}
+
 // Mock data for transactions - would be replaced with actual Razorpay API call
-const fetchTransactions = async () => {
+const fetchTransactions = async (): Promise<TransactionsResponse> => {
   // In a real app, this would call the Razorpay API
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -108,9 +138,9 @@ const fetchTransactions = async () => {
 
 const TransactionLogs: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<TransactionsResponse>({
     queryKey: ['transactions', searchTerm],
     queryFn: fetchTransactions
   });
@@ -136,13 +166,13 @@ const TransactionLogs: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'captured':
-        return <Badge className="bg-green-500">Captured</Badge>;
+        return <Badge variant="success">Captured</Badge>;
       case 'authorized':
-        return <Badge className="bg-blue-500">Authorized</Badge>;
+        return <Badge variant="success">Authorized</Badge>;
       case 'failed':
-        return <Badge className="bg-red-500">Failed</Badge>;
+        return <Badge variant="destructive">Failed</Badge>;
       case 'refunded':
-        return <Badge className="bg-amber-500">Refunded</Badge>;
+        return <Badge variant="warning">Refunded</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -159,7 +189,7 @@ const TransactionLogs: React.FC = () => {
     }
   };
 
-  const viewTransactionDetails = (transaction: any) => {
+  const viewTransactionDetails = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
   };
 
