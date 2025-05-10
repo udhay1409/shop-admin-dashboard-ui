@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Building, 
   User, 
@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { PurchaseBill, getVendorPurchaseBills, formatAmount } from '@/services/purchaseBillService';
 
 interface Vendor {
   id: string;
@@ -36,31 +37,28 @@ interface Vendor {
   totalPurchases: string;
 }
 
-interface PurchaseBill {
-  id: string;
-  vendorId: string;
-  billDate: string;
-  amount: string;
-  status: string;
-  paymentMethod?: string;
-  paymentDate?: string;
-  deliveryDate?: string;
-  invoiceNumber?: string;
-  items?: {
-    name: string;
-    quantity: number;
-    price: string;
-    total: string;
-  }[];
-}
-
 interface VendorDetailsProps {
   vendor: Vendor;
-  purchaseHistory: PurchaseBill[];
   onViewBillDetails?: (bill: PurchaseBill) => void;
 }
 
-const VendorDetails = ({ vendor, purchaseHistory, onViewBillDetails }: VendorDetailsProps) => {
+const VendorDetails = ({ vendor, onViewBillDetails }: VendorDetailsProps) => {
+  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseBill[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPurchaseHistory = async () => {
+      setLoading(true);
+      if (vendor && vendor.id) {
+        const bills = await getVendorPurchaseBills(vendor.id);
+        setPurchaseHistory(bills);
+      }
+      setLoading(false);
+    };
+
+    fetchPurchaseHistory();
+  }, [vendor]);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -124,7 +122,11 @@ const VendorDetails = ({ vendor, purchaseHistory, onViewBillDetails }: VendorDet
           </h3>
         </div>
         
-        {purchaseHistory.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center h-32">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#EC008C] border-t-transparent"></div>
+          </div>
+        ) : purchaseHistory.length > 0 ? (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -142,13 +144,13 @@ const VendorDetails = ({ vendor, purchaseHistory, onViewBillDetails }: VendorDet
               <TableBody>
                 {purchaseHistory.map((bill) => (
                   <TableRow key={bill.id}>
-                    <TableCell className="font-medium">{bill.id}</TableCell>
-                    <TableCell>{bill.invoiceNumber || 'N/A'}</TableCell>
+                    <TableCell className="font-medium">{bill.id.slice(0, 8)}</TableCell>
+                    <TableCell>{bill.invoice_number || 'N/A'}</TableCell>
                     <TableCell className="flex items-center gap-1">
                       <CalendarDays className="h-3 w-3 text-gray-400" />
-                      {bill.billDate}
+                      {new Date(bill.bill_date).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>{bill.amount}</TableCell>
+                    <TableCell>{formatAmount(bill.amount)}</TableCell>
                     <TableCell>
                       <Badge variant={bill.status === 'Paid' ? 'success' : 'warning'}>
                         {bill.status}
@@ -157,21 +159,21 @@ const VendorDetails = ({ vendor, purchaseHistory, onViewBillDetails }: VendorDet
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-xs text-gray-500">
-                          {bill.paymentMethod || 'N/A'}
+                          {bill.payment_method || 'N/A'}
                         </span>
-                        {bill.paymentDate && (
+                        {bill.payment_date && (
                           <span className="text-xs flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {bill.paymentDate}
+                            {new Date(bill.payment_date).toLocaleDateString()}
                           </span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      {bill.deliveryDate ? (
+                      {bill.delivery_date ? (
                         <span className="text-xs flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {bill.deliveryDate}
+                          {new Date(bill.delivery_date).toLocaleDateString()}
                         </span>
                       ) : (
                         'Pending'

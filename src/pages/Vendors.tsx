@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Search, FileText, MoreHorizontal, Download, Trash, Filter, ListFilter, ArrowLeftRight, FileBarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ import PurchaseBillForm from '@/components/vendors/PurchaseBillForm';
 import VendorDetails from '@/components/vendors/VendorDetails';
 import { Badge } from '@/components/ui/badge';
 import { Vendor, getVendors, deleteVendor } from '@/services/vendorService';
+import { PurchaseBill, getPurchaseBills, deletePurchaseBill, formatAmount } from '@/services/purchaseBillService';
 
 // Interface to map Supabase Vendor to VendorDetails expected format
 interface VendorDetailsProps {
@@ -53,11 +55,13 @@ const Vendors = () => {
   const [isPurchaseBillDialogOpen, setIsPurchaseBillDialogOpen] = useState(false);
   const [isVendorDetailsOpen, setIsVendorDetailsOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<VendorDetailsProps | null>(null);
-  const [selectedBill, setSelectedBill] = useState<any | null>(null);
+  const [selectedBill, setSelectedBill] = useState<PurchaseBill | null>(null);
   const [activeTab, setActiveTab] = useState('vendors');
   const [selectedVendorFilter, setSelectedVendorFilter] = useState('all');
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [purchaseBills, setPurchaseBills] = useState<PurchaseBill[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingBills, setLoadingBills] = useState(true);
   
   // Fetch vendors from Supabase
   useEffect(() => {
@@ -80,69 +84,24 @@ const Vendors = () => {
     fetchVendors();
   }, [toast]);
 
-  // For now, we'll keep using mock data for purchase bills until those APIs are implemented
-  const mockPurchaseBills = [
-    { 
-      id: 'PB001', 
-      vendorId: '1', 
-      vendorName: 'Fashion Wholesaler Inc.', 
-      billDate: '2025-04-28', 
-      amount: '$5,250.00',
-      status: 'Paid',
-      paymentDate: '2025-05-02',
-      paymentMethod: 'Bank Transfer',
-      invoiceNumber: 'INV-2025-001',
-      deliveryDate: '2025-05-05',
-      items: [
-        { name: 'Summer Dresses', quantity: 50, price: '$45.00', total: '$2,250.00' },
-        { name: 'Designer Jeans', quantity: 30, price: '$100.00', total: '$3,000.00' }
-      ]
-    },
-    { 
-      id: 'PB002', 
-      vendorId: '2', 
-      vendorName: 'Textile Materials Ltd', 
-      billDate: '2025-04-20', 
-      amount: '$3,750.00',
-      status: 'Pending',
-      paymentMethod: 'Credit Card',
-      invoiceNumber: 'INV-2025-002',
-      items: [
-        { name: 'Cotton Fabric', quantity: 500, price: '$5.00', total: '$2,500.00' },
-        { name: 'Silk Material', quantity: 50, price: '$25.00', total: '$1,250.00' }
-      ]
-    },
-    { 
-      id: 'PB003', 
-      vendorId: '4', 
-      vendorName: 'Global Fashion Imports', 
-      billDate: '2025-05-01', 
-      amount: '$8,400.00',
-      status: 'Paid',
-      paymentDate: '2025-05-05',
-      paymentMethod: 'Wire Transfer',
-      invoiceNumber: 'INV-2025-003',
-      deliveryDate: '2025-05-10',
-      items: [
-        { name: 'Designer Handbags', quantity: 20, price: '$320.00', total: '$6,400.00' },
-        { name: 'Fashion Belts', quantity: 100, price: '$20.00', total: '$2,000.00' }
-      ]
-    },
-    { 
-      id: 'PB004', 
-      vendorId: '1', 
-      vendorName: 'Fashion Wholesaler Inc.', 
-      billDate: '2025-05-15', 
-      amount: '$7,800.00',
-      status: 'Pending',
-      paymentMethod: 'Check',
-      invoiceNumber: 'INV-2025-004',
-      items: [
-        { name: 'Winter Jackets', quantity: 30, price: '$150.00', total: '$4,500.00' },
-        { name: 'Cashmere Sweaters', quantity: 20, price: '$165.00', total: '$3,300.00' }
-      ]
-    },
-  ];
+  // Fetch purchase bills from Supabase
+  useEffect(() => {
+    const fetchPurchaseBills = async () => {
+      try {
+        setLoadingBills(true);
+        const data = await getPurchaseBills();
+        setPurchaseBills(data);
+      } catch (error) {
+        console.error('Error fetching purchase bills:', error);
+      } finally {
+        setLoadingBills(false);
+      }
+    };
+
+    if (activeTab === 'bills') {
+      fetchPurchaseBills();
+    }
+  }, [activeTab]);
 
   const filteredVendors = vendors.filter(vendor => 
     vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -150,20 +109,27 @@ const Vendors = () => {
     (vendor.email && vendor.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const filteredBills = mockPurchaseBills.filter(bill => {
+  const filteredBills = purchaseBills.filter(bill => {
     // First apply search term filter
     const matchesSearch = 
       bill.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bill.vendorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (bill.invoiceNumber && bill.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()));
+      bill.vendor?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (bill.invoice_number && bill.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Then apply vendor filter if not set to 'all'
     if (selectedVendorFilter !== 'all') {
-      return matchesSearch && bill.vendorId === selectedVendorFilter;
+      return matchesSearch && bill.vendor_id === selectedVendorFilter;
     }
     
     return matchesSearch;
   });
+
+  // Calculate total purchases for a vendor
+  const calculateTotalPurchases = (vendorId: string): string => {
+    const vendorBills = purchaseBills.filter(bill => bill.vendor_id === vendorId);
+    const total = vendorBills.reduce((sum, bill) => sum + bill.amount, 0);
+    return formatAmount(total);
+  };
 
   // Transform database vendor to VendorDetails format
   const mapVendorToDetails = (vendor: Vendor): VendorDetailsProps => {
@@ -173,6 +139,9 @@ const Vendors = () => {
         : `${vendor.address.street || ''} ${vendor.address.city || ''} ${vendor.address.state || ''} ${vendor.address.zip || ''}`
       : 'N/A';
     
+    // Calculate total purchases for this vendor
+    const totalPurchases = calculateTotalPurchases(vendor.id);
+    
     return {
       id: vendor.id,
       name: vendor.name,
@@ -181,7 +150,7 @@ const Vendors = () => {
       phone: vendor.phone || 'N/A',
       address: address,
       status: vendor.status,
-      totalPurchases: '$0.00' // Default value since we don't have this data yet
+      totalPurchases: totalPurchases
     };
   };
 
@@ -203,16 +172,28 @@ const Vendors = () => {
     }
   };
 
-  const handleDeleteBill = (billId: string) => {
-    // In a real app, you'd delete the bill from your database
-    toast({
-      title: "Purchase Bill deleted",
-      description: `Bill ID: ${billId} has been deleted.`,
-    });
+  const handleDeleteBill = async (billId: string) => {
+    const success = await deletePurchaseBill(billId);
+    if (success) {
+      // Remove the deleted bill from the state
+      setPurchaseBills(purchaseBills.filter(bill => bill.id !== billId));
+    }
   };
 
-  const handleViewBillDetails = (bill: any) => {
+  const handleViewBillDetails = (bill: PurchaseBill) => {
     setSelectedBill(bill);
+  };
+
+  const handlePurchaseBillSuccess = async () => {
+    setIsPurchaseBillDialogOpen(false);
+    toast({
+      title: "Purchase bill added",
+      description: "New purchase bill has been recorded successfully."
+    });
+    
+    // Refresh bills list
+    const data = await getPurchaseBills();
+    setPurchaseBills(data);
   };
 
   if (loading) {
@@ -388,59 +369,68 @@ const Vendors = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {/* We're still using mock data for purchase bills */}
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Bill ID</TableHead>
-                    <TableHead>Invoice #</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBills.map((bill) => (
-                    <TableRow key={bill.id}>
-                      <TableCell className="font-medium">{bill.id}</TableCell>
-                      <TableCell>{bill.invoiceNumber || 'N/A'}</TableCell>
-                      <TableCell>{bill.vendorName}</TableCell>
-                      <TableCell>{bill.billDate}</TableCell>
-                      <TableCell>{bill.amount}</TableCell>
-                      <TableCell>
-                        <Badge variant={bill.status === 'Paid' ? 'success' : 'warning'}>
-                          {bill.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewBillDetails(bill)}>
-                              <FileText className="mr-2 h-4 w-4" />
-                              View Bill
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Download className="mr-2 h-4 w-4" />
-                              Download
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteBill(bill.id)}>
-                              <Trash className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+              {loadingBills ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-[#EC008C] border-t-transparent"></div>
+                </div>
+              ) : filteredBills.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <p className="text-muted-foreground">No purchase bills found. Add your first purchase bill to get started.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Bill ID</TableHead>
+                      <TableHead>Invoice #</TableHead>
+                      <TableHead>Vendor</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBills.map((bill) => (
+                      <TableRow key={bill.id}>
+                        <TableCell className="font-medium">{bill.id.slice(0, 8)}</TableCell>
+                        <TableCell>{bill.invoice_number || 'N/A'}</TableCell>
+                        <TableCell>{bill.vendor?.name || 'Unknown'}</TableCell>
+                        <TableCell>{new Date(bill.bill_date).toLocaleDateString()}</TableCell>
+                        <TableCell>{formatAmount(bill.amount)}</TableCell>
+                        <TableCell>
+                          <Badge variant={bill.status === 'Paid' ? 'success' : 'warning'}>
+                            {bill.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewBillDetails(bill)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                View Bill
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Download className="mr-2 h-4 w-4" />
+                                Download
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteBill(bill.id)}>
+                                <Trash className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -480,13 +470,7 @@ const Vendors = () => {
           </DialogHeader>
           <PurchaseBillForm 
             vendors={vendors}
-            onSuccess={() => {
-              setIsPurchaseBillDialogOpen(false);
-              toast({
-                title: "Purchase bill added",
-                description: "New purchase bill has been recorded successfully."
-              });
-            }}
+            onSuccess={handlePurchaseBillSuccess}
           />
         </DialogContent>
       </Dialog>
@@ -500,7 +484,6 @@ const Vendors = () => {
           {selectedVendor && (
             <VendorDetails 
               vendor={selectedVendor} 
-              purchaseHistory={mockPurchaseBills.filter(bill => bill.vendorId === selectedVendor.id)}
               onViewBillDetails={handleViewBillDetails}
             />
           )}
@@ -522,15 +505,15 @@ const Vendors = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Vendor</p>
-                  <p>{selectedBill.vendorName}</p>
+                  <p>{selectedBill.vendor?.name || 'Unknown'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Invoice Number</p>
-                  <p>{selectedBill.invoiceNumber || 'N/A'}</p>
+                  <p>{selectedBill.invoice_number || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Bill Date</p>
-                  <p>{selectedBill.billDate}</p>
+                  <p>{new Date(selectedBill.bill_date).toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Status</p>
@@ -542,49 +525,55 @@ const Vendors = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Amount</p>
-                  <p className="font-semibold">{selectedBill.amount}</p>
+                  <p className="font-semibold">{formatAmount(selectedBill.amount)}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Payment Method</p>
-                  <p>{selectedBill.paymentMethod || 'N/A'}</p>
+                  <p>{selectedBill.payment_method || 'N/A'}</p>
                 </div>
-                {selectedBill.paymentDate && (
+                {selectedBill.payment_date && (
                   <div>
                     <p className="text-sm font-medium text-gray-500">Payment Date</p>
-                    <p>{selectedBill.paymentDate}</p>
+                    <p>{new Date(selectedBill.payment_date).toLocaleDateString()}</p>
                   </div>
                 )}
-                {selectedBill.deliveryDate && (
+                {selectedBill.delivery_date && (
                   <div>
                     <p className="text-sm font-medium text-gray-500">Delivery Date</p>
-                    <p>{selectedBill.deliveryDate}</p>
+                    <p>{new Date(selectedBill.delivery_date).toLocaleDateString()}</p>
                   </div>
                 )}
               </div>
 
-              <div>
-                <h3 className="font-medium mb-2">Items</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedBill.items.map((item: any, index: number) => (
-                      <TableRow key={index}>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>{item.price}</TableCell>
-                        <TableCell className="text-right">{item.total}</TableCell>
+              {selectedBill.items && selectedBill.items.length > 0 ? (
+                <div>
+                  <h3 className="font-medium mb-2">Items</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedBill.items.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>{formatAmount(item.price)}</TableCell>
+                          <TableCell className="text-right">{formatAmount(item.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500 border rounded-md">
+                  <p>No items information available for this bill.</p>
+                </div>
+              )}
 
               <div className="flex justify-end">
                 <Button variant="outline" onClick={() => setSelectedBill(null)}>Close</Button>

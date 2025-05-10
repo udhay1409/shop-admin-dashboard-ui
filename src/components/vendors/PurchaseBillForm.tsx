@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/table';
 import { PlusCircle, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { createPurchaseBill } from '@/services/purchaseBillService';
 
 const billItemSchema = z.object({
   name: z.string().min(1, { message: "Item name is required" }),
@@ -38,10 +39,13 @@ const billItemSchema = z.object({
 });
 
 const purchaseBillSchema = z.object({
-  vendorId: z.string({ required_error: "Please select a vendor" }),
-  billDate: z.string().min(1, { message: "Bill date is required" }),
+  vendor_id: z.string({ required_error: "Please select a vendor" }),
+  bill_date: z.string().min(1, { message: "Bill date is required" }),
   status: z.string({ required_error: "Please select bill status" }),
-  paymentDate: z.string().optional(),
+  invoice_number: z.string().optional(),
+  payment_method: z.string().optional(),
+  payment_date: z.string().optional(),
+  delivery_date: z.string().optional(),
   items: z.array(billItemSchema).min(1, { message: "At least one item is required" }),
 });
 
@@ -65,14 +69,18 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
   const [itemQuantity, setItemQuantity] = useState('');
   const [itemPrice, setItemPrice] = useState('');
   const [itemError, setItemError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<PurchaseBillFormValues>({
     resolver: zodResolver(purchaseBillSchema),
     defaultValues: initialData || {
-      vendorId: '',
-      billDate: new Date().toISOString().split('T')[0],
+      vendor_id: '',
+      bill_date: new Date().toISOString().split('T')[0],
       status: 'Pending',
-      paymentDate: '',
+      invoice_number: '',
+      payment_method: '',
+      payment_date: '',
+      delivery_date: '',
       items: [],
     },
   });
@@ -110,23 +118,43 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
   const calculateTotal = () => {
     return items.reduce((sum, item) => {
       return sum + (item.quantity * item.price);
-    }, 0).toFixed(2);
+    }, 0);
   };
 
-  const onSubmit = (data: PurchaseBillFormValues) => {
-    // In a real application, you would save this data to your backend
-    console.log('Purchase bill submitted:', data);
-    
-    // Calculate and add the total amount
-    const submitData = {
-      ...data,
-      amount: `$${calculateTotal()}`
-    };
-    
-    console.log('Final data with amount:', submitData);
-    
-    // Call the success callback
-    onSuccess();
+  const onSubmit = async (data: PurchaseBillFormValues) => {
+    try {
+      setIsSubmitting(true);
+      const totalAmount = calculateTotal();
+      
+      // Format the data for the API
+      const billData = {
+        vendor_id: data.vendor_id,
+        bill_date: data.bill_date,
+        status: data.status as 'Paid' | 'Pending',
+        invoice_number: data.invoice_number || null,
+        payment_method: data.payment_method || null,
+        payment_date: data.status === 'Paid' && data.payment_date ? data.payment_date : null,
+        delivery_date: data.delivery_date || null,
+        amount: totalAmount
+      };
+      
+      // Map items with total calculated
+      const billItems = data.items.map(item => ({
+        ...item,
+        total: item.quantity * item.price
+      }));
+      
+      // Call the service to create the purchase bill
+      const result = await createPurchaseBill(billData, billItems);
+      
+      if (result) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Error submitting purchase bill:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -135,13 +163,14 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="vendorId"
+            name="vendor_id"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Vendor</FormLabel>
                 <Select 
                   onValueChange={field.onChange} 
                   defaultValue={field.value}
+                  disabled={isSubmitting}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -161,12 +190,26 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
           
           <FormField
             control={form.control}
-            name="billDate"
+            name="bill_date"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Bill Date</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input type="date" {...field} disabled={isSubmitting} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="invoice_number"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Invoice Number</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Enter invoice number" disabled={isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -182,6 +225,7 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
                 <Select 
                   onValueChange={field.onChange} 
                   defaultValue={field.value}
+                  disabled={isSubmitting}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -199,20 +243,50 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
           />
           
           {form.watch('status') === 'Paid' && (
-            <FormField
-              control={form.control}
-              name="paymentDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <>
+              <FormField
+                control={form.control}
+                name="payment_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} disabled={isSubmitting} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="payment_method"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment Method</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g., Credit Card, Bank Transfer" disabled={isSubmitting} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
           )}
+          
+          <FormField
+            control={form.control}
+            name="delivery_date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Delivery Date</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} disabled={isSubmitting} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
         
         <Separator className="my-4" />
@@ -226,7 +300,8 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
               <Input 
                 placeholder="Enter item name" 
                 value={itemName} 
-                onChange={(e) => setItemName(e.target.value)} 
+                onChange={(e) => setItemName(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
             <div>
@@ -235,7 +310,8 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
                 type="number" 
                 placeholder="Enter quantity" 
                 value={itemQuantity} 
-                onChange={(e) => setItemQuantity(e.target.value)} 
+                onChange={(e) => setItemQuantity(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
             <div>
@@ -244,7 +320,8 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
                 type="number" 
                 placeholder="Enter unit price" 
                 value={itemPrice} 
-                onChange={(e) => setItemPrice(e.target.value)} 
+                onChange={(e) => setItemPrice(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -256,6 +333,7 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
               onClick={addItem}
               size="sm"
               className="ml-auto"
+              disabled={isSubmitting}
             >
               <PlusCircle className="mr-1 h-4 w-4" />
               Add Item
@@ -285,6 +363,7 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
                         variant="ghost" 
                         size="icon" 
                         onClick={() => removeItem(index)}
+                        disabled={isSubmitting}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -293,7 +372,7 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
                 ))}
                 <TableRow>
                   <TableCell colSpan={3} className="text-right font-medium">Total Amount:</TableCell>
-                  <TableCell className="font-bold">${calculateTotal()}</TableCell>
+                  <TableCell className="font-bold">${calculateTotal().toFixed(2)}</TableCell>
                   <TableCell></TableCell>
                 </TableRow>
               </TableBody>
@@ -310,14 +389,19 @@ const PurchaseBillForm = ({ onSuccess, vendors, initialData }: PurchaseBillFormP
         </div>
         
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={() => {
-            form.reset();
-            setItems([]);
-          }}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => {
+              form.reset();
+              setItems([]);
+            }}
+            disabled={isSubmitting}
+          >
             Reset
           </Button>
-          <Button type="submit">
-            Save Bill
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : 'Save Bill'}
           </Button>
         </div>
       </form>

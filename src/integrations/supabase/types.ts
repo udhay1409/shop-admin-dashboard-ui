@@ -920,6 +920,94 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_bill_items: {
+        Row: {
+          bill_id: string
+          created_at: string
+          id: string
+          name: string
+          price: number
+          quantity: number
+          total: number
+        }
+        Insert: {
+          bill_id: string
+          created_at?: string
+          id?: string
+          name: string
+          price: number
+          quantity: number
+          total: number
+        }
+        Update: {
+          bill_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          price?: number
+          quantity?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_bill_items_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_bills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_bills: {
+        Row: {
+          amount: number
+          bill_date: string
+          created_at: string
+          delivery_date: string | null
+          id: string
+          invoice_number: string | null
+          payment_date: string | null
+          payment_method: string | null
+          status: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          amount: number
+          bill_date: string
+          created_at?: string
+          delivery_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          amount?: number
+          bill_date?: string
+          created_at?: string
+          delivery_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_bills_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           cost_price: number
