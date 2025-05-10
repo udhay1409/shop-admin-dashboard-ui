@@ -15,7 +15,7 @@ export default function usePOS() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const { toast } = useToast();
 
   // Calculate totals
@@ -57,7 +57,7 @@ export default function usePOS() {
     const matchesSearch = searchTerm === '' || 
       product.name.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = categoryFilter === '' || 
+    const matchesCategory = categoryFilter === 'all' || 
       product.category === categoryFilter;
     
     return matchesSearch && matchesCategory;

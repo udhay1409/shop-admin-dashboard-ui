@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Product } from '@/types/product';
-import { toast } from '@/hooks/use-toast';
+import { Product, ProductStatus } from '@/types/product';
+import { useToast } from '@/hooks/use-toast';
 import { createOrder } from './orderService';
 
 // Get all active products for POS
@@ -16,11 +16,6 @@ export async function getPOSProducts(): Promise<Product[]> {
   
   if (error) {
     console.error('Error fetching POS products:', error);
-    toast({
-      title: 'Failed to load products',
-      description: error.message,
-      variant: 'destructive',
-    });
     return [];
   }
 
@@ -30,7 +25,7 @@ export async function getPOSProducts(): Promise<Product[]> {
     name: item.name,
     price: Number(item.price),
     stock: item.stock,
-    status: item.status,
+    status: item.status as ProductStatus,
     category: item.category?.name || 'Uncategorized',
     image: item.image_url,
     description: item.description || '',
@@ -61,11 +56,6 @@ export async function getPOSCategories(): Promise<string[]> {
   
   if (error) {
     console.error('Error fetching product categories:', error);
-    toast({
-      title: 'Failed to load categories',
-      description: error.message,
-      variant: 'destructive',
-    });
     return [];
   }
 
@@ -84,11 +74,7 @@ export async function createTransaction(
     const { data: userData } = await supabase.auth.getUser();
     
     if (!userData.user) {
-      toast({
-        title: 'Authentication required',
-        description: 'You must be logged in to process sales',
-        variant: 'destructive',
-      });
+      console.error('Authentication required');
       return null;
     }
     
@@ -97,14 +83,14 @@ export async function createTransaction(
     
     const orderData = {
       user_id: userData.user.id,
-      status: 'Delivered', // POS sales are typically delivered immediately
+      status: 'Delivered' as const, // POS sales are typically delivered immediately
       total_amount: totalAmount + taxAmount,
       payment_method: paymentMethod,
-      payment_status: 'Paid', // POS sales are typically paid immediately
+      payment_status: 'Paid' as const, // POS sales are typically paid immediately
       shipping_address: shippingAddress,
       shipping_cost: 0, // No shipping for in-store purchases
       notes: 'In-store purchase via POS',
-      delivery_status: 'Delivered',
+      delivery_status: 'Delivered' as const,
     };
     
     // Create the order
@@ -164,19 +150,9 @@ export async function createTransaction(
       }
     }
     
-    toast({
-      title: 'Sale completed',
-      description: `Transaction #${orderId.substring(0, 8)} processed successfully`,
-    });
-    
     return orderId;
   } catch (error) {
     console.error('Error processing transaction:', error);
-    toast({
-      title: 'Transaction failed',
-      description: error instanceof Error ? error.message : 'An unknown error occurred',
-      variant: 'destructive',
-    });
     return null;
   }
 }
