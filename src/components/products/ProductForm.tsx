@@ -44,13 +44,14 @@ const formSchema = z.object({
   additionalImages: z.array(z.string()).optional(),
 });
 
-interface ProductFormProps {
+export interface ProductFormProps {
   product?: Product;
   onSubmit: (values: Partial<Product>) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   categories: string[];
   subcategories: {id: string, name: string}[];
+  onCategoryChange: (category: string) => void;
 }
 
 const ProductForm: React.FC<ProductFormProps> = ({
@@ -59,7 +60,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
   onCancel,
   isSubmitting,
   categories,
-  subcategories
+  subcategories,
+  onCategoryChange
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(product?.image || null);
@@ -95,7 +97,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   // from ProductDialog.tsx which already fetches them
 
   const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
+    onCategoryChange(value);
     form.setValue('category', value);
     form.setValue('subcategory', ''); // Reset subcategory when category changes
   };

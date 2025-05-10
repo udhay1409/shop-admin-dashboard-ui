@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
 import * as productService from '@/services/productService';
 import { WarehouseLocation } from '@/services/productInventoryService';
+import { productInventoryService, ProductInventoryItem } from '@/services/productInventoryService';
 
 export default function useProductInventory() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -31,34 +32,11 @@ export default function useProductInventory() {
   useEffect(() => {
     fetchProducts();
     
-    // Fetch warehouse locations (will be implemented properly with Supabase later)
+    // Fetch warehouse locations
     const fetchLocations = async () => {
       try {
-        // In a real application, this would be a call to the API
-        // For now using mock data
-        setLocations([
-          {
-            id: '1',
-            name: 'Main Warehouse',
-            address: '123 Warehouse St, New York, NY 10001',
-            totalItems: 4500,
-            itemsLowStock: 42,
-          },
-          {
-            id: '2',
-            name: 'East Coast Distribution',
-            address: '456 East Ave, Boston, MA 02108',
-            totalItems: 3200,
-            itemsLowStock: 28,
-          },
-          {
-            id: '3',
-            name: 'West Coast Center',
-            address: '789 Pacific Rd, Los Angeles, CA 90012',
-            totalItems: 2800,
-            itemsLowStock: 35,
-          }
-        ]);
+        const locationsList = await productInventoryService.getLocations();
+        setLocations(locationsList);
       } catch (error) {
         console.error('Error fetching warehouse locations:', error);
       }
@@ -145,7 +123,40 @@ export default function useProductInventory() {
     }
   };
   
-  // Simplified inventory methods - to be completed when implementing inventory management
+  // Add these missing methods that are used in Inventory.tsx
+  const getAllInventory = (): Array<ProductInventoryItem & { product: Product }> => {
+    return productInventoryService.getAllInventory();
+  };
+  
+  const getProductInventory = (productId: string): ProductInventoryItem[] => {
+    return productInventoryService.getProductInventory(productId);
+  };
+  
+  const updateProductStock = (productId: string, locationId: string, quantity: number): void => {
+    try {
+      productInventoryService.updateProductStock(productId, locationId, quantity);
+      // Update the products list with new stock value
+      const totalStock = productInventoryService.getProductInventory(productId)
+        .reduce((sum, item) => sum + item.quantity, 0);
+        
+      setProducts(prev => prev.map(p => 
+        p.id === productId ? { ...p, stock: totalStock } : p
+      ));
+      
+      toast({
+        title: 'Success',
+        description: 'Stock updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating product stock:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update stock.',
+        variant: 'destructive',
+      });
+    }
+  };
+  
   const getProductStock = async (productId: string, locationId?: string) => {
     try {
       // This would call a real API in a production environment
@@ -185,6 +196,10 @@ export default function useProductInventory() {
     deleteProduct,
     getProductStock,
     updateStock,
-    refreshProducts: fetchProducts
+    refreshProducts: fetchProducts,
+    // Add these methods to the return object
+    getAllInventory,
+    getProductInventory,
+    updateProductStock
   };
 }

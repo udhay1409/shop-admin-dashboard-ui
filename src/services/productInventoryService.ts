@@ -1,4 +1,3 @@
-
 import { Product } from '@/types/product';
 
 // Initial mock product data
@@ -85,6 +84,7 @@ export interface ProductInventoryItem {
   quantity: number;
   lowStockThreshold: number;
   lastRestocked: string;
+  product?: Product;
 }
 
 // Mock warehouse locations
@@ -245,7 +245,7 @@ class ProductInventoryService {
     return this.productInventory.filter(item => item.productId === productId);
   }
 
-  // Get all inventory items
+  // Get all inventory items with their associated products
   getAllInventory(): Array<ProductInventoryItem & { product: Product }> {
     return this.productInventory.map(item => {
       const product = this.getProductById(item.productId);
