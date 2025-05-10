@@ -140,6 +140,7 @@ export interface ProductFormProps {
   categories: string[];
   subcategories: {id: string, name: string}[];
   onCategoryChange: (category: string) => void;
+  initialAttributes?: ProductAttributeWithValues[]; // Added this line to fix the TypeScript error
 }
 
 const ProductForm: React.FC<ProductFormProps> = ({
