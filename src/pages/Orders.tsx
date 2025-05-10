@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -51,6 +50,7 @@ import { Eye, Search, FilterIcon, CalendarIcon, CheckCircle, ArrowRight, Package
 import { toast } from "@/hooks/use-toast";
 import OrderTimeline from '@/components/orders/OrderTimeline';
 import OrdersTable from '@/components/orders/OrdersTable';
+import OrderFormDialog from '@/components/orders/OrderFormDialog';
 import { Order } from '@/types/order';
 
 const Orders: React.FC = () => {
@@ -62,6 +62,7 @@ const Orders: React.FC = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
+  const [isNewOrderDialogOpen, setIsNewOrderDialogOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
@@ -513,12 +514,45 @@ const Orders: React.FC = () => {
   };
 
   // Create a new order
-  const handleNewOrder = () => {
+  const handleCreateOrder = (newOrderData: Partial<Order>) => {
+    // Generate a unique order ID
+    const orderId = `ORD${Math.floor(1000 + Math.random() * 9000)}`;
+    
+    // Get current date in the format "DD MMM YYYY"
+    const today = new Date();
+    const formattedDate = `${today.getDate().toString().padStart(2, '0')} ${today.toLocaleString('default', { month: 'short' })} ${today.getFullYear()}`;
+    
+    // Create the complete new order
+    const newOrder: Order = {
+      id: orderId,
+      date: formattedDate,
+      customerName: newOrderData.customerName || '',
+      items: newOrderData.items || '',
+      total: newOrderData.total || '',
+      payment: newOrderData.payment || '',
+      status: 'Pending',
+      expectedAction: 'Confirm within 24 hrs',
+      address: newOrderData.address,
+      phone: newOrderData.phone
+    };
+    
+    // Add the new order to the orders data
+    setOrdersData(prevOrders => [newOrder, ...prevOrders]);
+    
+    // Close the dialog
+    setIsNewOrderDialogOpen(false);
+    
+    // Show confirmation toast
     toast({
-      title: "Feature Not Implemented",
-      description: "The new order creation feature is not yet implemented.",
+      title: "New Order Created",
+      description: `Order ID: ${orderId}`,
       variant: "default",
     });
+  };
+
+  // Handle order creation
+  const handleNewOrder = () => {
+    setIsNewOrderDialogOpen(true);
   };
 
   return (
@@ -536,7 +570,11 @@ const Orders: React.FC = () => {
             <Download className="h-4 w-4" />
             <span>{isExporting ? 'Exporting...' : 'Export Orders'}</span>
           </Button>
-          <Button variant="default" className="bg-pink-500 hover:bg-pink-600" onClick={handleNewOrder}>
+          <Button 
+            variant="default" 
+            className="bg-pink-500 hover:bg-pink-600" 
+            onClick={handleNewOrder}
+          >
             <span className="mr-2">New Order</span>
             <span className="text-lg">+</span>
           </Button>
@@ -952,6 +990,13 @@ const Orders: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* New Order Dialog */}
+      <OrderFormDialog 
+        open={isNewOrderDialogOpen}
+        onOpenChange={setIsNewOrderDialogOpen}
+        onSubmit={handleCreateOrder}
+      />
     </div>
   );
 };
