@@ -10,6 +10,7 @@ export default function useProductInventory() {
   const [products, setProducts] = useState<Product[]>([]);
   const [locations, setLocations] = useState<WarehouseLocation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inventoryItems, setInventoryItems] = useState<ProductInventoryItem[]>([]);
   const { toast } = useToast();
 
   const fetchProducts = async () => {
@@ -23,6 +24,25 @@ export default function useProductInventory() {
       toast({
         title: 'Error',
         description: 'Failed to load products. Please try again later.',
+        variant: 'destructive',
+      });
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInventory = async () => {
+    setLoading(true);
+    try {
+      const items = await productInventoryService.getAllInventory();
+      setInventoryItems(items);
+      return items;
+    } catch (error) {
+      console.error('Error fetching inventory:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load inventory data. Please try again later.',
         variant: 'destructive',
       });
       return [];
@@ -45,6 +65,7 @@ export default function useProductInventory() {
     };
     
     fetchLocations();
+    fetchInventory();
   }, []);
 
   const getProductById = async (id: string): Promise<Product | null> => {
@@ -125,30 +146,42 @@ export default function useProductInventory() {
     }
   };
   
-  // Inventory management methods
-  const getAllInventory = (): Array<ProductInventoryItem & { product: Product }> => {
-    return productInventoryService.getAllInventory();
-  };
-  
-  const getProductInventory = (productId: string): ProductInventoryItem[] => {
-    return productInventoryService.getProductInventory(productId);
-  };
-  
-  const updateProductStock = (productId: string, locationId: string, quantity: number): void => {
+  // Get all inventory items with associated products
+  const getAllInventory = async () => {
     try {
-      productInventoryService.updateProductStock(productId, locationId, quantity);
-      // Update the products list with new stock value
-      const totalStock = productInventoryService.getProductInventory(productId)
-        .reduce((sum, item) => sum + item.quantity, 0);
-        
-      setProducts(prev => prev.map(p => 
-        p.id === productId ? { ...p, stock: totalStock } : p
-      ));
+      const items = await productInventoryService.getAllInventory();
+      setInventoryItems(items);
+      return items;
+    } catch (error) {
+      console.error('Error fetching all inventory:', error);
+      return [];
+    }
+  };
+  
+  // Get inventory for a specific product
+  const getProductInventory = async (productId: string): Promise<ProductInventoryItem[]> => {
+    try {
+      return await productInventoryService.getProductInventory(productId);
+    } catch (error) {
+      console.error('Error fetching product inventory:', error);
+      return [];
+    }
+  };
+  
+  // Update product stock at a specific location
+  const updateProductStock = async (productId: string, locationId: string, quantity: number): Promise<boolean> => {
+    try {
+      await productInventoryService.updateProductStock(productId, locationId, quantity);
+      
+      // Refresh inventory data
+      fetchInventory();
+      fetchProducts(); // Also refresh products to get updated stock values
       
       toast({
         title: 'Success',
         description: 'Stock updated successfully',
       });
+      return true;
     } catch (error) {
       console.error('Error updating product stock:', error);
       toast({
@@ -156,14 +189,20 @@ export default function useProductInventory() {
         description: 'Failed to update stock.',
         variant: 'destructive',
       });
+      return false;
     }
   };
   
-  const getProductStock = async (productId: string, locationId?: string) => {
+  const getProductStock = async (productId: string, locationId?: string): Promise<number> => {
     try {
-      // This would call a real API in a production environment
-      // For now, return the stock from the product object
-      const product = findProductById(productId);
+      if (locationId) {
+        const inventory = await productInventoryService.getProductInventory(productId);
+        const locationItem = inventory.find(item => item.locationId === locationId);
+        return locationItem?.quantity || 0;
+      }
+      
+      // Return total stock from the product record
+      const product = await getProductById(productId);
       return product?.stock || 0;
     } catch (error) {
       console.error('Error fetching product stock:', error);
@@ -171,7 +210,11 @@ export default function useProductInventory() {
     }
   };
   
-  const updateStock = async (productId: string, newQuantity: number, locationId?: string) => {
+  const updateStock = async (productId: string, newQuantity: number, locationId?: string): Promise<boolean> => {
+    if (locationId) {
+      return updateProductStock(productId, locationId, newQuantity);
+    }
+    
     try {
       const updatedProduct = await productService.updateProduct(productId, { stock: newQuantity });
       setProducts(prev => prev.map(p => p.id === productId ? updatedProduct : p));
@@ -194,6 +237,7 @@ export default function useProductInventory() {
   return {
     products,
     locations,
+    inventoryItems,
     loading,
     getProductById,
     findProductById,
@@ -203,6 +247,7 @@ export default function useProductInventory() {
     getProductStock,
     updateStock,
     refreshProducts: fetchProducts,
+    refreshInventory: fetchInventory,
     // Inventory management methods
     getAllInventory,
     getProductInventory,

@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Search, PlusCircle, Filter, MoreHorizontal, Trash, Edit, ArrowUpDown } from 'lucide-react';
+import { Search, PlusCircle, Filter, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,98 +18,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import useProductInventory from '@/hooks/useProductInventory';
+import { WarehouseLocation, ProductInventoryItem } from '@/services/productInventoryService';
+import { StockUpdateDialog } from '@/components/inventory/StockUpdateDialog';
 import { Badge } from '@/components/ui/badge';
-
-// Interface for stock update dialog
-interface StockUpdateDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  productId: string;
-  productName: string;
-  locationId: string;
-  currentStock: number;
-  onUpdate: (quantity: number) => void;
-  isUpdating: boolean;
-}
-
-const StockUpdateDialog: React.FC<StockUpdateDialogProps> = ({
-  isOpen,
-  onClose,
-  productId,
-  productName,
-  locationId,
-  currentStock,
-  onUpdate,
-  isUpdating
-}) => {
-  const [quantity, setQuantity] = useState(currentStock);
-
-  useEffect(() => {
-    if (isOpen) {
-      setQuantity(currentStock);
-    }
-  }, [isOpen, currentStock]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onUpdate(quantity);
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Update Stock</DialogTitle>
-          <DialogDescription>
-            Update inventory quantity for {productName}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="quantity" className="text-sm font-medium">
-              Quantity
-            </label>
-            <Input
-              id="quantity"
-              type="number"
-              min="0"
-              value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-              className="w-full"
-            />
-          </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isUpdating}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isUpdating}>
-              {isUpdating ? 'Updating...' : 'Update Stock'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-};
 
 const Inventory = () => {
   const { toast } = useToast();
@@ -116,9 +31,10 @@ const Inventory = () => {
     products, 
     locations, 
     getAllInventory, 
-    getProductInventory, 
     updateProductStock, 
-    findProductById 
+    findProductById,
+    loading,
+    refreshInventory
   } = useProductInventory();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -128,9 +44,16 @@ const Inventory = () => {
   const [selectedLocationId, setSelectedLocationId] = useState('');
   const [currentStock, setCurrentStock] = useState(0);
   const [isUpdatingStock, setIsUpdatingStock] = useState(false);
+  const [inventoryItems, setInventoryItems] = useState<ProductInventoryItem[]>([]);
   
-  // Get all inventory items with product information
-  const inventoryItems = getAllInventory();
+  useEffect(() => {
+    const loadInventory = async () => {
+      const items = await getAllInventory();
+      setInventoryItems(items);
+    };
+    
+    loadInventory();
+  }, [getAllInventory]);
   
   // Calculate low stock items
   const lowStockItems = inventoryItems.filter(
@@ -139,9 +62,9 @@ const Inventory = () => {
 
   // Filter inventory items based on search term
   const filteredInventory = inventoryItems.filter(item => 
-    item.product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.product.category.toLowerCase().includes(searchTerm.toLowerCase())
+    item.product?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.product?.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.product?.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Filter locations based on search term
@@ -151,17 +74,11 @@ const Inventory = () => {
   );
 
   // Open stock update dialog
-  const handleUpdateStock = (productId: string, locationId: string) => {
-    const inventoryItem = inventoryItems.find(
-      item => item.productId === productId && item.locationId === locationId
-    );
-    
-    if (inventoryItem) {
-      setSelectedProductId(productId);
-      setSelectedLocationId(locationId);
-      setCurrentStock(inventoryItem.quantity);
-      setStockDialogOpen(true);
-    }
+  const handleUpdateStock = (productId: string, locationId: string, currentQty: number) => {
+    setSelectedProductId(productId);
+    setSelectedLocationId(locationId);
+    setCurrentStock(currentQty);
+    setStockDialogOpen(true);
   };
   
   // Handle stock update
@@ -169,14 +86,22 @@ const Inventory = () => {
     setIsUpdatingStock(true);
     
     try {
-      updateProductStock(selectedProductId, selectedLocationId, quantity);
+      const success = await updateProductStock(selectedProductId, selectedLocationId, quantity);
       
-      toast({
-        title: "Stock updated",
-        description: "Product inventory has been updated successfully."
-      });
-      
-      setStockDialogOpen(false);
+      if (success) {
+        toast({
+          title: "Stock updated",
+          description: "Product inventory has been updated successfully."
+        });
+        
+        // Refresh inventory data
+        const items = await refreshInventory();
+        setInventoryItems(items || []);
+        
+        setStockDialogOpen(false);
+      } else {
+        throw new Error("Failed to update stock");
+      }
     } catch (error) {
       console.error('Error updating stock:', error);
       toast({
@@ -193,6 +118,10 @@ const Inventory = () => {
   const selectedProductName = selectedProductId 
     ? (findProductById(selectedProductId)?.name || 'Product')
     : 'Product';
+    
+  if (loading) {
+    return <div className="p-6 text-center">Loading inventory data...</div>;
+  }
 
   return (
     <div className="p-6">
@@ -278,7 +207,7 @@ const Inventory = () => {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                       </div>
                     </TableHead>
-                    <TableHead>Last Restocked</TableHead>
+                    <TableHead>Last Updated</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -297,7 +226,7 @@ const Inventory = () => {
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
                               <div className="h-10 w-10 rounded overflow-hidden border bg-gray-50">
-                                {item.product.image ? (
+                                {item.product?.image ? (
                                   <img 
                                     src={item.product.image} 
                                     alt={item.product.name} 
@@ -307,11 +236,11 @@ const Inventory = () => {
                                   <div className="h-full w-full bg-gray-200"></div>
                                 )}
                               </div>
-                              {item.product.name}
+                              {item.product?.name}
                             </div>
                           </TableCell>
-                          <TableCell>{item.product.sku || 'N/A'}</TableCell>
-                          <TableCell>{item.product.category}</TableCell>
+                          <TableCell>{item.product?.sku || 'N/A'}</TableCell>
+                          <TableCell>{item.product?.category || 'N/A'}</TableCell>
                           <TableCell>{location?.name || 'Unknown'}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end">
@@ -324,12 +253,14 @@ const Inventory = () => {
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell>{item.lastRestocked}</TableCell>
+                          <TableCell>
+                            {new Date(item.lastRestocked).toLocaleDateString()}
+                          </TableCell>
                           <TableCell className="text-right">
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              onClick={() => handleUpdateStock(item.productId, item.locationId)}
+                              onClick={() => handleUpdateStock(item.productId, item.locationId, item.quantity)}
                             >
                               Update Stock
                             </Button>
@@ -357,7 +288,13 @@ const Inventory = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLocations.map((location) => {
+                  {filteredLocations.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center">
+                        No locations found.
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredLocations.map((location) => {
                     // Calculate actual values based on inventory data
                     const locationItems = inventoryItems.filter(item => item.locationId === location.id);
                     const locationLowStock = locationItems.filter(item => item.quantity <= item.lowStockThreshold);
