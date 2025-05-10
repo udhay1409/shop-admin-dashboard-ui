@@ -36,73 +36,38 @@ import {
 import { Customer } from '@/types/customer';
 import CustomerDetailsDialog from '@/components/customers/CustomerDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
-
-// Mock data for demonstration
-const mockCustomers: Customer[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    status: 'Active',
-    joinedDate: '2023-04-15',
-    lastLoginDate: '2023-05-01',
-    totalOrders: 12,
-    totalSpent: 1250.99,
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane.smith@example.com',
-    phone: '+1 (555) 987-6543',
-    status: 'Active',
-    joinedDate: '2023-03-22',
-    lastLoginDate: '2023-05-02',
-    totalOrders: 8,
-    totalSpent: 875.50,
-  },
-  {
-    id: '3',
-    name: 'Robert Johnson',
-    email: 'robert.j@example.com',
-    phone: '+1 (555) 456-7890',
-    status: 'Inactive',
-    joinedDate: '2023-01-10',
-    lastLoginDate: '2023-02-15',
-    totalOrders: 3,
-    totalSpent: 210.25,
-  },
-  {
-    id: '4',
-    name: 'Emily Davis',
-    email: 'emily.davis@example.com',
-    phone: '+1 (555) 234-5678',
-    status: 'Active',
-    joinedDate: '2023-04-30',
-    lastLoginDate: '2023-05-03',
-    totalOrders: 5,
-    totalSpent: 450.75,
-  },
-  {
-    id: '5',
-    name: 'Michael Wilson',
-    email: 'michael.w@example.com',
-    phone: '+1 (555) 876-5432',
-    status: 'Pending',
-    joinedDate: '2023-04-28',
-    lastLoginDate: null,
-    totalOrders: 0,
-    totalSpent: 0,
-  },
-];
+import { getCustomers } from '@/services/customerService';
+import { CustomerList } from '@/components/contacts/CustomerList';
 
 const Customers = () => {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loadCustomers = async () => {
+      try {
+        setLoading(true);
+        const data = await getCustomers();
+        setCustomers(data);
+      } catch (error) {
+        console.error('Error loading customers:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load customers data',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCustomers();
+  }, [toast]);
 
   // Filter customers based on search and status
   const filteredCustomers = customers.filter(customer => {
@@ -169,97 +134,20 @@ const Customers = () => {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead>Last Login</TableHead>
-                  <TableHead>Orders</TableHead>
-                  <TableHead>Spent</TableHead>
-                  <TableHead className="w-[80px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCustomers.length > 0 ? (
-                  filteredCustomers.map((customer) => (
-                    <TableRow
-                      key={customer.id}
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleCustomerClick(customer)}
-                    >
-                      <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>{customer.email}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            customer.status === 'Active'
-                              ? 'bg-green-100 text-green-800'
-                              : customer.status === 'Inactive'
-                              ? 'bg-gray-100 text-gray-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}
-                        >
-                          {customer.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>{formatDate(customer.joinedDate)}</TableCell>
-                      <TableCell>{formatDate(customer.lastLoginDate)}</TableCell>
-                      <TableCell>{customer.totalOrders}</TableCell>
-                      <TableCell>{formatCurrency(customer.totalSpent)}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <ArrowUpDown className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCustomerClick(customer);
-                              }}
-                            >
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toast({
-                                  title: "Email sent",
-                                  description: `Email sent to ${customer.name}`,
-                                });
-                              }}
-                            >
-                              Send Email
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                      No customers found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#EC008C] border-t-transparent"></div>
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <CustomerList />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       {selectedCustomer && (
         <CustomerDetailsDialog
           isOpen={isDetailsOpen}
