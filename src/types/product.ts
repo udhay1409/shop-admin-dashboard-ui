@@ -1,5 +1,7 @@
 
 export type ProductStatus = "Active" | "Draft" | "Inactive";
+export type ProductSize = "XS" | "S" | "M" | "L" | "XL";
+export type ProductColor = "Red" | "Blue" | "Green" | "Yellow" | "Pink" | "Black" | "White";
 
 export interface Product {
   id: string;
@@ -13,6 +15,10 @@ export interface Product {
   sku?: string;
   createdAt: string;
   updatedAt: string;
+  availableSizes?: ProductSize[];
+  availableColors?: ProductColor[];
+  originalPrice?: number;
+  subcategory?: string;
 }
 
 export interface ProductFormValues {
@@ -25,4 +31,8 @@ export interface ProductFormValues {
   image?: string;
   description?: string;
   sku?: string;
+  availableSizes?: ProductSize[];
+  availableColors?: ProductColor[];
+  originalPrice?: number;
+  subcategory?: string;
 }

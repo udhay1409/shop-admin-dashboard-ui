@@ -69,8 +69,8 @@ export default {
 				},
 				// E-commerce admin specific colors
 				ecommerce: {
-					primary: '#EC008C', // Updated to the requested primary color
-					chart: '#EC008C', // Updated to match primary
+					primary: '#EC008C', // Maintain the primary pink color
+					chart: '#EC008C',
 					positive: '#22C55E', // Green for positive changes
 					negative: '#EF4444', // Red for negative changes
 				}
