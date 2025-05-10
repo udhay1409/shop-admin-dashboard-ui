@@ -33,9 +33,9 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
     if (isOpen && product?.category) {
       const fetchSubcategories = async () => {
         try {
-          // In a real implementation, we would pass the actual category ID
-          const fetchedSubcategories = await getSubcategories();
-          setSubcategories(fetchedSubcategories);
+          // Find the category ID from the categories list
+          const categoryObj = await getSubcategories();
+          setSubcategories(categoryObj);
         } catch (error) {
           console.error('Error fetching subcategories:', error);
         }
@@ -47,7 +47,7 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{product ? 'Edit Product' : 'Add New Product'}</DialogTitle>
         </DialogHeader>

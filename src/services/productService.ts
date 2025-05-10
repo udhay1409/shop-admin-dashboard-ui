@@ -33,11 +33,11 @@ export async function getProducts(): Promise<Product[]> {
     trending: item.trending,
     hotSelling: item.hot_selling,
     subcategory: item.subcategory || '',
-    availableSizes: item.available_sizes,
-    availableColors: item.available_colors,
-    bulkDiscountQuantity: item.bulk_discount_quantity,
-    bulkDiscountPercentage: item.bulk_discount_percentage,
-    additionalImages: item.additional_images
+    availableSizes: item.available_sizes || [],
+    availableColors: item.available_colors || [],
+    bulkDiscountQuantity: item.bulk_discount_quantity || 0,
+    bulkDiscountPercentage: item.bulk_discount_percentage || 0,
+    additionalImages: item.additional_images || []
   }));
 }
 
@@ -78,11 +78,11 @@ export async function getProductById(id: string): Promise<Product | null> {
     trending: data.trending,
     hotSelling: data.hot_selling,
     subcategory: data.subcategory || '',
-    availableSizes: data.available_sizes,
-    availableColors: data.available_colors,
-    bulkDiscountQuantity: data.bulk_discount_quantity,
-    bulkDiscountPercentage: data.bulk_discount_percentage,
-    additionalImages: data.additional_images
+    availableSizes: data.available_sizes || [],
+    availableColors: data.available_colors || [],
+    bulkDiscountQuantity: data.bulk_discount_quantity || 0,
+    bulkDiscountPercentage: data.bulk_discount_percentage || 0,
+    additionalImages: data.additional_images || []
   };
 }
 
@@ -152,11 +152,11 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
     trending: data.trending,
     hotSelling: data.hot_selling,
     subcategory: data.subcategory || '',
-    availableSizes: data.available_sizes,
-    availableColors: data.available_colors,
-    bulkDiscountQuantity: data.bulk_discount_quantity,
-    bulkDiscountPercentage: data.bulk_discount_percentage,
-    additionalImages: data.additional_images
+    availableSizes: data.available_sizes || [],
+    availableColors: data.available_colors || [],
+    bulkDiscountQuantity: data.bulk_discount_quantity || 0,
+    bulkDiscountPercentage: data.bulk_discount_percentage || 0,
+    additionalImages: data.additional_images || []
   };
 }
 
@@ -238,11 +238,11 @@ export async function updateProduct(id: string, productData: Partial<ProductForm
     trending: data.trending,
     hotSelling: data.hot_selling,
     subcategory: data.subcategory || '',
-    availableSizes: data.available_sizes,
-    availableColors: data.available_colors,
-    bulkDiscountQuantity: data.bulk_discount_quantity,
-    bulkDiscountPercentage: data.bulk_discount_percentage,
-    additionalImages: data.additional_images
+    availableSizes: data.available_sizes || [],
+    availableColors: data.available_colors || [],
+    bulkDiscountQuantity: data.bulk_discount_quantity || 0,
+    bulkDiscountPercentage: data.bulk_discount_percentage || 0,
+    additionalImages: data.additional_images || []
   };
 }
 
