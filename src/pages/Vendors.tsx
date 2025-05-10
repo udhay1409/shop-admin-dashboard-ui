@@ -34,13 +34,25 @@ import VendorDetails from '@/components/vendors/VendorDetails';
 import { Badge } from '@/components/ui/badge';
 import { Vendor, getVendors, deleteVendor } from '@/services/vendorService';
 
+// Interface to map Supabase Vendor to VendorDetails expected format
+interface VendorDetailsProps {
+  id: string;
+  name: string;
+  contact: string;
+  email: string;
+  phone: string;
+  address: string;
+  status: string;
+  totalPurchases: string;
+}
+
 const Vendors = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [isVendorDialogOpen, setIsVendorDialogOpen] = useState(false);
   const [isPurchaseBillDialogOpen, setIsPurchaseBillDialogOpen] = useState(false);
   const [isVendorDetailsOpen, setIsVendorDetailsOpen] = useState(false);
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [selectedVendor, setSelectedVendor] = useState<VendorDetailsProps | null>(null);
   const [selectedBill, setSelectedBill] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState('vendors');
   const [selectedVendorFilter, setSelectedVendorFilter] = useState('all');
@@ -153,8 +165,28 @@ const Vendors = () => {
     return matchesSearch;
   });
 
+  // Transform database vendor to VendorDetails format
+  const mapVendorToDetails = (vendor: Vendor): VendorDetailsProps => {
+    const address = vendor.address 
+      ? typeof vendor.address === 'string' 
+        ? vendor.address 
+        : `${vendor.address.street || ''} ${vendor.address.city || ''} ${vendor.address.state || ''} ${vendor.address.zip || ''}`
+      : 'N/A';
+    
+    return {
+      id: vendor.id,
+      name: vendor.name,
+      contact: vendor.contact_name || 'N/A',
+      email: vendor.email || 'N/A',
+      phone: vendor.phone || 'N/A',
+      address: address,
+      status: vendor.status,
+      totalPurchases: '$0.00' // Default value since we don't have this data yet
+    };
+  };
+
   const handleOpenVendorDetails = (vendor: Vendor) => {
-    setSelectedVendor(vendor);
+    setSelectedVendor(mapVendorToDetails(vendor));
     setIsVendorDetailsOpen(true);
   };
 
