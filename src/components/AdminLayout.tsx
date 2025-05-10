@@ -12,7 +12,7 @@ const AdminLayout: React.FC = () => {
   useEffect(() => {
     // Update the page title based on the current route
     const path = location.pathname.split('/').pop() || '';
-    if (path === '') {
+    if (path === 'dashboard' || path === '') {
       setPageTitle('Dashboard');
     } else {
       setPageTitle(path.charAt(0).toUpperCase() + path.slice(1));

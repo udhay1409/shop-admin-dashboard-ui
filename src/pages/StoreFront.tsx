@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,12 +34,16 @@ import Register from './Register';
 
 // Protected route component for store
 const StoreProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
+  
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
   
   if (!user) {
     // Redirect to the login page with the current location
-    return <Navigate to="/store/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   return children;
@@ -48,14 +53,14 @@ const StoreFront: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
-  const { user, logout, userRole } = useAuth();
+  const { user, logout, userRole, isLoading } = useAuth();
   
-  // Redirect admin users to the admin dashboard
+  // Redirect admin users to the admin dashboard if they access /store directly
   useEffect(() => {
-    if (user && userRole === 'admin' && location.pathname.startsWith('/store')) {
-      window.location.href = '/';
+    if (!isLoading && user && userRole === 'admin' && location.pathname === '/store') {
+      window.location.href = '/dashboard';
     }
-  }, [user, userRole, location]);
+  }, [user, userRole, location, isLoading]);
   
   // Simple admin check
   const isAdmin = userRole === 'admin';
@@ -143,7 +148,7 @@ const StoreFront: React.FC = () => {
                 <Button variant="ghost" size="icon" className="relative">
                   <ShoppingCart className="h-5 w-5" />
                   <span className="absolute -top-1 -right-1 bg-[#EC008C] text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
-                    3
+                    0
                   </span>
                 </Button>
               </Link>
@@ -167,7 +172,7 @@ const StoreFront: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <Link to="/store/login">
+                <Link to="/login">
                   <Button
                     className="ml-2 bg-[#EC008C] hover:bg-[#D1007D]"
                     size="sm"
@@ -178,7 +183,7 @@ const StoreFront: React.FC = () => {
               )}
               
               {isAdmin && (
-                <Link to="/">
+                <Link to="/dashboard">
                   <Button variant="outline" size="sm" className="ml-2 border-[#EC008C] text-[#EC008C]" title="Admin Dashboard">
                     Admin
                   </Button>
@@ -329,10 +334,7 @@ const StoreFront: React.FC = () => {
             </StoreProtectedRoute>
           } />
           
-          {/* Login/Register routes */}
-          <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
-          
+          {/* No need for Login/Register routes here as they're now at the top level */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

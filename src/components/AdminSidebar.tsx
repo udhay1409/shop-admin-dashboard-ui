@@ -113,12 +113,12 @@ const AdminSidebar = () => {
       
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
-          <SidebarItem to="/" icon={LayoutDashboard} text="Dashboard" />
-          <SidebarItem to="/orders" icon={ShoppingCart} text="Orders" badge={10} />
+          <SidebarItem to="/dashboard" icon={LayoutDashboard} text="Dashboard" />
+          <SidebarItem to="/orders" icon={ShoppingCart} text="Orders" badge={0} />
           <SidebarItem to="/products" icon={Package} text="Products" />
           <SidebarItem to="/categories" icon={Folder} text="Categories" />
           <SidebarItem to="/pos" icon={CreditCard} text="POS" />
-          <SidebarItem to="/delivery" icon={Truck} text="Delivery" badge={5} />
+          <SidebarItem to="/delivery" icon={Truck} text="Delivery" badge={0} />
           <SidebarItem to="/inventory" icon={Boxes} text="Inventory" />
           <SidebarItem to="/vendors" icon={Store} text="Vendors" />
           <SidebarItem 
@@ -135,7 +135,7 @@ const AdminSidebar = () => {
         <div className="mt-4 border-t border-gray-200 pt-4">
           <ul className="space-y-1">
             <SidebarItem to="/coupon-code" icon={TicketPercent} text="Coupon code" />
-            <SidebarItem to="/reviews" icon={MessageSquare} text="Reviews" badge={3} />
+            <SidebarItem to="/reviews" icon={MessageSquare} text="Reviews" badge={0} />
             <SidebarItem to="/transaction-logs" icon={Receipt} text="Transactions" />
             <SidebarItem to="/reports" icon={BarChart2} text="Reports" />
             <SidebarItem to="/settings" icon={Settings} text="Settings" />

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -37,10 +37,10 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { login, userRole } = useAuth();
+  const { login, isAuthenticated, userRole, isLoading } = useAuth();
   
   // Check if we have a redirect path
-  const from = location.state?.from?.pathname || '/store';
+  const from = location.state?.from?.pathname || '/';
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -50,13 +50,26 @@ const Login = () => {
     },
   });
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      if (userRole === 'admin') {
+        navigate('/dashboard');
+      } else {
+        navigate('/store');
+      }
+    }
+  }, [isAuthenticated, isLoading, navigate, userRole]);
+
   const onSubmit = async (values: LoginFormValues) => {
     try {
       const success = await login(values.email, values.password);
-      
-      // Note: The redirection happens in the login function in AuthContext
-      // based on the user role to avoid race conditions with role fetching
-      
+      if (success) {
+        toast({
+          title: 'Login successful',
+          description: 'Welcome back!',
+        });
+      }
     } catch (error) {
       console.error('Login error:', error);
       toast({
@@ -66,6 +79,15 @@ const Login = () => {
       });
     }
   };
+
+  // If still loading, show a spinner
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#EC008C]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
@@ -126,6 +148,13 @@ const Login = () => {
               </Button>
             </form>
           </Form>
+          
+          {/* Display admin test credentials */}
+          <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+            <p className="text-sm font-medium text-gray-700">Admin Test Credentials:</p>
+            <p className="text-xs text-gray-600">Email: kansha@mntfuture.com</p>
+            <p className="text-xs text-gray-600">Password: 123456</p>
+          </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2 border-t pt-4">
           <div className="text-center text-sm">

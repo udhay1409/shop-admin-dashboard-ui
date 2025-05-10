@@ -25,35 +25,53 @@ import POS from "./pages/POS";
 import StoreFront from "./pages/StoreFront";
 import Subcategories from "./pages/Subcategories";
 import HomePage from "./pages/HomePage";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { useEffect } from "react";
+import { supabase } from "./integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
-// Simple authentication state (in a real app, use proper auth management)
-const isAuthenticated = () => {
-  // Replace with actual auth logic
-  return true; // Set to false to test authentication flow
-};
+// Root route component for conditional redirection
+const RootRedirect = () => {
+  const { isAuthenticated, isLoading, userRole } = useAuth();
+  const location = useLocation();
 
-// Check if the user is an admin (in a real app, check roles)
-const isAdmin = () => {
-  // Replace with actual role check
-  return true;
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
+
+  if (isAuthenticated) {
+    // If user is admin, redirect to admin dashboard
+    if (userRole === 'admin') {
+      return <Navigate to="/dashboard" replace />;
+    }
+    // Otherwise, redirect to store front
+    return <Navigate to="/store" replace />;
+  }
+
+  // If not authenticated, redirect to login
+  return <Navigate to="/login" replace />;
 };
 
 // Protected route component
-const ProtectedRoute = ({ children }) => {
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
+const ProtectedRoute = ({ children, requiredRole = null }) => {
+  const { user, isAuthenticated, isLoading, userRole } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
 
-  return children;
-};
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-// Admin route component
-const AdminRoute = ({ children }) => {
-  if (!isAuthenticated() || !isAdmin()) {
-    return <Navigate to="/login" replace />;
+  if (requiredRole && userRole !== requiredRole) {
+    // If role is specified but user doesn't have it
+    if (userRole === 'admin') {
+      return <Navigate to="/dashboard" replace />;
+    }
+    return <Navigate to="/store" replace />;
   }
 
   return children;
@@ -64,7 +82,10 @@ const AppWithAuth = () => {
   return (
     <AuthProvider>
       <Routes>
-        {/* Store Frontend - Fix: Use a proper nested route structure */}
+        {/* Root route with smart redirect */}
+        <Route path="/" element={<RootRedirect />} />
+        
+        {/* Store Frontend */}
         <Route path="/store/*" element={<StoreFront />} />
 
         {/* Authentication routes */}
@@ -72,13 +93,13 @@ const AppWithAuth = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Protected admin routes */}
-        <Route path="/" element={
-          <AdminRoute>
+        {/* Admin routes - require admin role */}
+        <Route path="/*" element={
+          <ProtectedRoute requiredRole="admin">
             <AdminLayout />
-          </AdminRoute>
+          </ProtectedRoute>
         }>
-          <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="orders" element={<Orders />} />
           <Route path="products" element={<Products />} />
           <Route path="categories" element={<Categories />} />
@@ -94,7 +115,6 @@ const AppWithAuth = () => {
           <Route path="transaction-logs" element={<TransactionLogs />} />
           <Route path="pos" element={<POS />} />
           <Route path="contact" element={<NotFound />} /> {/* Placeholder for Contact */}
-          {/* Other routes will be added as they're needed */}
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="*" element={<NotFound />} />
@@ -104,6 +124,58 @@ const AppWithAuth = () => {
 };
 
 function App() {
+  // Function to create admin user on app startup if it doesn't exist
+  useEffect(() => {
+    const createAdminUser = async () => {
+      try {
+        // Check if admin user exists by trying to sign in
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: 'kansha@mntfuture.com',
+          password: '123456'
+        });
+        
+        if (error && error.message.includes('Invalid login credentials')) {
+          // If login failed, create the admin user
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: 'kansha@mntfuture.com',
+            password: '123456',
+            options: {
+              data: {
+                first_name: 'Admin',
+                last_name: 'User'
+              }
+            }
+          });
+          
+          if (signUpError) {
+            console.error('Error creating admin user:', signUpError);
+          } else {
+            console.log('Admin user created successfully');
+            
+            // Add admin role
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .insert({
+                user_id: signUpData.user.id,
+                role: 'admin'
+              });
+              
+            if (roleError) {
+              console.error('Error setting admin role:', roleError);
+            }
+          }
+        }
+        
+        // Sign out after checking/creating admin
+        await supabase.auth.signOut();
+      } catch (error) {
+        console.error('Error in admin user setup:', error);
+      }
+    };
+    
+    createAdminUser();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
