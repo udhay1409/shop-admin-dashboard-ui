@@ -44,6 +44,24 @@ export async function hasRole(userId: string, role: 'admin' | 'staff' | 'custome
 }
 
 /**
+ * Checks if the current authenticated user has a specific role
+ * Uses the database function directly for better performance
+ * @param role The role to check for
+ * @returns Boolean indicating if the current user has the specified role
+ */
+export async function hasCurrentUserRole(role: 'admin' | 'staff' | 'customer'): Promise<boolean> {
+  const { data, error } = await supabase
+    .rpc('has_role', { role_name: role });
+  
+  if (error) {
+    console.error('Error checking current user role:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
  * Assigns a role to a user
  * @param userId The ID of the user to assign the role to
  * @param role The role to assign
