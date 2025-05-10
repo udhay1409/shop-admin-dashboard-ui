@@ -58,7 +58,7 @@ const CategoryPage = () => {
       <BreadcrumbNav 
         items={[
           { label: 'Home', href: '/store' },
-          { label: categoryName }
+          { label: categoryName, href: `/store/categories/${categorySlug || ''}` }
         ]} 
       />
       

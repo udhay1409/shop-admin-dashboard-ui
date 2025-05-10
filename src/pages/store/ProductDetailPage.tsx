@@ -153,8 +153,8 @@ const ProductDetailPage = () => {
       <BreadcrumbNav 
         items={[
           { label: 'Home', href: '/store' },
-          { label: product.category, href: `/store/categories/${product.category.toLowerCase().replace(' ', '-')}` },
-          { label: product.name }
+          { label: product?.category || 'Category', href: `/store/categories/${product?.category?.toLowerCase().replace(' ', '-') || ''}` },
+          { label: product?.name || 'Product', href: `/store/product/${productId || ''}` }
         ]} 
       />
       
