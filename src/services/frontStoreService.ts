@@ -1,6 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { Product } from "@/types/product";
+import { Product, ProductStatus } from "@/types/product";
 import { StoreSettings } from "@/services/settingsService";
 
 // Get featured products for the store front
@@ -93,7 +92,7 @@ export async function getTrendingProducts(limit: number = 8): Promise<Product[]>
 }
 
 // Get full store settings directly from the database
-export async function getStoreFrontSettings() {
+export async function getStoreFrontSettings(): Promise<StoreSettings | null> {
   const { data: session } = await supabase.auth.getSession();
   if (!session?.session?.user) {
     // For public frontend, get default settings or first admin settings
