@@ -178,8 +178,8 @@ export const useTopProducts = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, units_sold, image_url")
-        .order("units_sold", { ascending: false })
+        .select("id, name, price, stock, image_url")
+        .order("stock", { ascending: false })
         .limit(4);
 
       if (error) throw error;
@@ -188,7 +188,7 @@ export const useTopProducts = () => {
         id: product.id,
         name: product.name,
         price: `Rs ${product.price.toFixed(2)}`,
-        unitsSold: product.units_sold || 0,
+        unitsSold: product.stock || 0, // Using stock as a replacement for units_sold
         image: product.image_url || '/placeholder.svg'
       }));
     },
