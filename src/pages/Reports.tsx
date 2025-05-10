@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,7 +6,7 @@ import ProductTable from '@/components/ProductTable';
 import MetricCard from '@/components/MetricCard';
 import SalesReport from '@/components/reports/SalesReport';
 import TopProductsReport from '@/components/reports/TopProductsReport';
-import ReportTypeSelector from '@/components/reports/ReportTypeSelector';
+import ReportTypeSelector, { ReportType } from '@/components/reports/ReportTypeSelector';
 import ReportDateRangePicker from '@/components/reports/ReportDateRangePicker';
 
 // Sample data for the metrics
@@ -99,7 +98,7 @@ const Reports: React.FC = () => {
     to: new Date()
   });
   
-  const [reportType, setReportType] = useState<'overview' | 'sales' | 'products' | 'customers'>('overview');
+  const [reportType, setReportType] = useState<ReportType>('overview');
 
   return (
     <div className="space-y-6">
@@ -107,12 +106,18 @@ const Reports: React.FC = () => {
         <h1 className="text-2xl font-bold">Reports</h1>
         
         <div className="flex flex-col sm:flex-row gap-2">
-          <ReportTypeSelector value={reportType} onValueChange={setReportType} />
-          <ReportDateRangePicker value={dateRange} onChange={setDateRange} />
+          <ReportTypeSelector 
+            value={reportType} 
+            onValueChange={(value: ReportType) => setReportType(value)} 
+          />
+          <ReportDateRangePicker 
+            value={dateRange} 
+            onChange={setDateRange} 
+          />
         </div>
       </div>
 
-      <Tabs defaultValue="overview" value={reportType} onValueChange={(value) => setReportType(value as any)}>
+      <Tabs defaultValue="overview" value={reportType} onValueChange={(value) => setReportType(value as ReportType)}>
         <TabsContent value="overview" className="space-y-6">
           {/* Metric Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

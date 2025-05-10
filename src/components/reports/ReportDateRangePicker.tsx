@@ -18,9 +18,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface DateRange {
+  from: Date | undefined;
+  to: Date | undefined;
+}
+
 interface ReportDateRangePickerProps {
-  value: { from: Date | undefined; to: Date | undefined };
-  onChange: (range: { from: Date | undefined; to: Date | undefined }) => void;
+  value: DateRange;
+  onChange: (range: DateRange) => void;
 }
 
 const ReportDateRangePicker: React.FC<ReportDateRangePickerProps> = ({ value, onChange }) => {
@@ -98,13 +103,14 @@ const ReportDateRangePicker: React.FC<ReportDateRangePickerProps> = ({ value, on
           defaultMonth={value?.from}
           selected={{ from: value?.from, to: value?.to }}
           onSelect={(range) => {
+            // Make sure we never pass undefined values when a date is required
             onChange(range || { from: undefined, to: undefined });
             if (range?.from && range?.to) {
               setIsOpen(false);
             }
           }}
           numberOfMonths={2}
-          className="p-3"
+          className="p-3 pointer-events-auto"
         />
       </PopoverContent>
     </Popover>

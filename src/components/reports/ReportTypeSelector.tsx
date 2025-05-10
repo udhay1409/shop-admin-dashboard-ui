@@ -7,23 +7,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChartColumn, FileChartColumnIcon, FileChartPieIcon, FileChartLine } from 'lucide-react';
+import { ChartBar, FileChartLine, FileChartPie } from 'lucide-react';
+
+// Define the report type as a union of specific string literals
+export type ReportType = 'overview' | 'sales' | 'products' | 'customers';
 
 interface ReportTypeSelectorProps {
-  value: string;
-  onValueChange: (value: string) => void;
+  value: ReportType;
+  onValueChange: (value: ReportType) => void;
 }
 
 const ReportTypeSelector: React.FC<ReportTypeSelectorProps> = ({ value, onValueChange }) => {
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select
+      value={value}
+      onValueChange={(val) => onValueChange(val as ReportType)}
+    >
       <SelectTrigger className="w-full sm:w-[180px]">
         <SelectValue placeholder="Select report type" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="overview">
           <div className="flex items-center">
-            <ChartColumn className="w-4 h-4 mr-2" />
+            <ChartBar className="w-4 h-4 mr-2" />
             <span>Overview</span>
           </div>
         </SelectItem>
@@ -35,13 +41,13 @@ const ReportTypeSelector: React.FC<ReportTypeSelectorProps> = ({ value, onValueC
         </SelectItem>
         <SelectItem value="products">
           <div className="flex items-center">
-            <FileChartColumnIcon className="w-4 h-4 mr-2" />
+            <ChartBar className="w-4 h-4 mr-2" />
             <span>Product Performance</span>
           </div>
         </SelectItem>
         <SelectItem value="customers">
           <div className="flex items-center">
-            <FileChartPieIcon className="w-4 h-4 mr-2" />
+            <FileChartPie className="w-4 h-4 mr-2" />
             <span>Customer Analysis</span>
           </div>
         </SelectItem>
