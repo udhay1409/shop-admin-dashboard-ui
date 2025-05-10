@@ -108,7 +108,8 @@ export async function getStoreFrontSettings() {
       return null;
     }
 
-    return data?.store_settings as StoreSettings;
+    // Type assertion to ensure correct typing
+    return data?.store_settings as StoreSettings | null;
   }
   
   // For authenticated users, get their settings
@@ -123,7 +124,8 @@ export async function getStoreFrontSettings() {
     return null;
   }
 
-  return data?.store_settings as StoreSettings;
+  // Type assertion to ensure correct typing
+  return data?.store_settings as StoreSettings | null;
 }
 
 // Get all product categories with counts
