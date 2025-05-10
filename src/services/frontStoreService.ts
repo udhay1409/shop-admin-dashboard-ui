@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Product, ProductStatus } from "@/types/product";
 import { StoreSettings } from "@/services/settingsService";
@@ -107,8 +108,11 @@ export async function getStoreFrontSettings(): Promise<StoreSettings | null> {
       return null;
     }
 
-    // Type assertion to ensure correct typing
-    return data?.store_settings as StoreSettings | null;
+    // Use proper type casting with safety check
+    if (data?.store_settings && typeof data.store_settings === 'object' && !Array.isArray(data.store_settings)) {
+      return data.store_settings as StoreSettings;
+    }
+    return null;
   }
   
   // For authenticated users, get their settings
@@ -123,8 +127,11 @@ export async function getStoreFrontSettings(): Promise<StoreSettings | null> {
     return null;
   }
 
-  // Type assertion to ensure correct typing
-  return data?.store_settings as StoreSettings | null;
+  // Use proper type casting with safety check
+  if (data?.store_settings && typeof data.store_settings === 'object' && !Array.isArray(data.store_settings)) {
+    return data.store_settings as StoreSettings;
+  }
+  return null;
 }
 
 // Get all product categories with counts
@@ -143,5 +150,3 @@ export async function getCategoriesWithCounts() {
 
   return data;
 }
-
-import { ProductStatus } from "@/types/product";
