@@ -23,7 +23,7 @@ import DeleteProductDialog from '@/components/products/DeleteProductDialog';
 import { Product } from '@/types/product';
 import useProductInventory from '@/hooks/useProductInventory';
 import { useToast } from '@/hooks/use-toast';
-import { getCategories } from '@/services/productService';
+import { getCategories } from '@/services/categoryService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProductAttributes } from '@/hooks/useProductAttributes';
 import { AttributeDisplay } from '@/components/products/AttributeDisplay';
