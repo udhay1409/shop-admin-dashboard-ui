@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,10 +24,8 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Upload, Plus, Trash2, Square } from 'lucide-react';
-import { getSubcategories } from '@/services/productService';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Product name must be at least 2 characters.' }),
@@ -53,6 +50,7 @@ interface ProductFormProps {
   onCancel: () => void;
   isSubmitting: boolean;
   categories: string[];
+  subcategories: {id: string, name: string}[];
 }
 
 const ProductForm: React.FC<ProductFormProps> = ({
@@ -60,13 +58,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
   onSubmit,
   onCancel,
   isSubmitting,
-  categories
+  categories,
+  subcategories
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(product?.image || null);
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
   const [additionalPreviews, setAdditionalPreviews] = useState<string[]>(product?.additionalImages || []);
-  const [subcategories, setSubcategories] = useState<{id: string, name: string}[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(product?.category || '');
   
   // Available sizes and colors for selection

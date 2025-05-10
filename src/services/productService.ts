@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Product, ProductFormValues, ProductStatus } from "@/types/product";
 
@@ -32,6 +33,7 @@ export async function getProducts(): Promise<Product[]> {
     isSale: item.is_sale,
     trending: item.trending,
     hotSelling: item.hot_selling,
+    // Map database fields to our model fields or use default values
     subcategory: item.subcategory || '',
     availableSizes: item.available_sizes || [],
     availableColors: item.available_colors || [],
@@ -77,6 +79,7 @@ export async function getProductById(id: string): Promise<Product | null> {
     isSale: data.is_sale,
     trending: data.trending,
     hotSelling: data.hot_selling,
+    // Map database fields to our model fields or use default values
     subcategory: data.subcategory || '',
     availableSizes: data.available_sizes || [],
     availableColors: data.available_colors || [],
@@ -116,11 +119,11 @@ export async function createProduct(productData: ProductFormValues): Promise<Pro
       trending: productData.trending || false,
       hot_selling: productData.hotSelling || false,
       subcategory: productData.subcategory || null,
-      available_sizes: productData.availableSizes || null,
-      available_colors: productData.availableColors || null,
+      available_sizes: productData.availableSizes || [],
+      available_colors: productData.availableColors || [],
       bulk_discount_quantity: productData.bulkDiscountQuantity || null,
       bulk_discount_percentage: productData.bulkDiscountPercentage || null,
-      additional_images: productData.additionalImages || null
+      additional_images: productData.additionalImages || []
     })
     .select(`
       *,
