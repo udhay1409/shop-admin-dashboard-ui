@@ -65,7 +65,14 @@ const Register = () => {
 
   const onSubmit = async (values: RegisterFormValues) => {
     try {
-      const success = await register(values.name, values.email, values.password);
+      // Update the register call to match the expected parameters
+      // Assuming register expects (name, email, password, metadata?)
+      const success = await register(
+        values.email, 
+        values.password, 
+        values.name, 
+        { name: values.name } // Pass name as metadata
+      );
       
       if (success) {
         // Store email for verification screen

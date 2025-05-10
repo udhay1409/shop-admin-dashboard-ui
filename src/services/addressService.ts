@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface UserAddress {
   id?: string;
-  user_id?: string;
+  user_id: string; // Changed from optional to required
   address_line1: string;
   address_line2?: string;
   city: string;
@@ -47,6 +47,13 @@ export const getAddressById = async (addressId: string) => {
 
 // Create a new address
 export const createAddress = async (addressData: Omit<UserAddress, 'id' | 'created_at' | 'updated_at'>) => {
+  // Ensure user_id is set if not provided in the data
+  if (!addressData.user_id) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User must be authenticated to create an address");
+    addressData = { ...addressData, user_id: user.id };
+  }
+
   const { data, error } = await supabase
     .from('user_addresses')
     .insert(addressData)

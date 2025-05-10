@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface PaymentMethod {
   id?: string;
-  user_id?: string;
+  user_id: string; // Changed from optional to required
   payment_type: 'credit_card' | 'paypal' | 'bank_transfer' | 'other';
   provider: string;
   account_number?: string;
@@ -44,7 +44,12 @@ export const getPaymentMethodById = async (paymentMethodId: string) => {
 
 // Create a new payment method
 export const createPaymentMethod = async (paymentData: Omit<PaymentMethod, 'id' | 'created_at' | 'updated_at'>) => {
-  // Encrypt sensitive data if needed - in production you'd use a more secure approach
+  // Ensure user_id is set if not provided in the data
+  if (!paymentData.user_id) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User must be authenticated to create a payment method");
+    paymentData = { ...paymentData, user_id: user.id };
+  }
   
   const { data, error } = await supabase
     .from('payment_methods')

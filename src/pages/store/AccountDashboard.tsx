@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link, Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,9 +21,9 @@ const ProfileTab = () => {
   const { user, updateProfile } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
+    name: user?.user_metadata?.name || "",
+    email: user?.email || "",
+    phone: user?.user_metadata?.phone || "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -366,6 +365,17 @@ const AccountDashboard = () => {
   const location = useLocation();
   const currentTab = location.pathname.split('/').pop() || 'profile';
   
+  // Helper to get user display name
+  const getUserDisplayName = () => {
+    if (!user) return "User";
+    const metadata = user.user_metadata as Record<string, any>;
+    return metadata?.name || user.email?.split('@')[0] || "User";
+  };
+  
+  const getUserEmail = () => {
+    return user?.email || "";
+  };
+  
   // If not authenticated, redirect to login
   if (!user) {
     navigate('/store/login');
@@ -390,8 +400,8 @@ const AccountDashboard = () => {
         <div className="w-full md:w-64 shrink-0">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">{user.name}</CardTitle>
-              <CardDescription>{user.email}</CardDescription>
+              <CardTitle className="text-xl">{getUserDisplayName()}</CardTitle>
+              <CardDescription>{getUserEmail()}</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <Tabs 

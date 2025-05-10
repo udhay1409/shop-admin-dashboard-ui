@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +53,14 @@ const StoreFront: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
   const { user, logout, userRole, isLoading } = useAuth();
+  
+  // Helper to get user display name
+  const getUserDisplayName = () => {
+    if (!user) return "";
+    // Use metadata if available, fall back to email
+    const metadata = user.user_metadata as Record<string, any>;
+    return metadata?.name || user.email?.split('@')[0] || "User";
+  };
   
   // Redirect admin users to the admin dashboard if they access /store directly
   useEffect(() => {
@@ -158,7 +165,7 @@ const StoreFront: React.FC = () => {
                   <Link to="/store/account">
                     <Button variant="ghost" size="sm" className="flex items-center gap-2">
                       <User className="h-4 w-4" />
-                      <span className="hidden md:inline">{user.name.split(' ')[0]}</span>
+                      <span className="hidden md:inline">{getUserDisplayName()}</span>
                     </Button>
                   </Link>
                   <Button 
