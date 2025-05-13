@@ -129,11 +129,11 @@ const POS: React.FC = () => {
                 </Card>
               ))
             ) : (
-              // Actual product cards
+              // Actual product cards - updated design
               products.map(product => (
                 <Card 
                   key={product.id} 
-                  className={`cursor-pointer transition-all ${product.stock > 0 ? 'hover:shadow-md hover:scale-[1.02] hover:border-purple-300' : 'opacity-60'}`}
+                  className={`cursor-pointer transition-all border border-gray-100 rounded-xl overflow-hidden hover:shadow-md ${product.stock > 0 ? 'hover:border-purple-300' : 'opacity-60'}`}
                   onClick={() => addToCart(product)}
                 >
                   <div className="relative">
@@ -142,34 +142,35 @@ const POS: React.FC = () => {
                         <img 
                           src={product.image} 
                           alt={product.name}
-                          className="h-full w-full object-cover rounded-t-md"
+                          className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="h-full w-full bg-gray-100 flex items-center justify-center rounded-t-md">
+                        <div className="h-full w-full bg-gray-100 flex items-center justify-center">
                           <Package className="h-10 w-10 text-gray-400" />
                         </div>
                       )}
                     </AspectRatio>
-                    <Badge className="absolute top-2 right-2 bg-purple-100 text-purple-800 hover:bg-purple-200">
+                    
+                    {/* Price badge updated with rounded full design */}
+                    <Badge className="absolute top-2 right-2 bg-pink-500 text-white hover:bg-pink-600 rounded-full px-3 py-1 font-medium">
                       ${product.price.toFixed(2)}
                     </Badge>
+                    
                     {product.stock <= 0 && (
-                      <div className="absolute inset-0 bg-gray-800/60 flex items-center justify-center rounded-t-md">
+                      <div className="absolute inset-0 bg-gray-800/60 flex items-center justify-center">
                         <span className="text-white font-bold text-sm bg-red-500/80 px-3 py-1 rounded-full">Out of Stock</span>
                       </div>
                     )}
                   </div>
-                  <CardContent className="p-3">
-                    <p className="text-sm font-medium truncate">{product.name}</p>
-                    <div className="flex justify-between items-center mt-1">
+                  
+                  {/* Updated card content with cleaner layout */}
+                  <div className="p-3 bg-white">
+                    <h3 className="font-medium text-gray-800 truncate">{product.name}</h3>
+                    <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-gray-500">{product.category}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${product.stock > 0 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'}`}>
-                        {product.stock > 0 ? `Stock: ${product.stock}` : 'Out of stock'}
-                      </span>
+                      <span className="text-xs font-medium">Stock: {product.stock}</span>
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
               ))
             )}
