@@ -11,7 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { CartItem } from '@/hooks/usePOS';
-import { CreditCard, Check, User, Wallet, Smartphone, ShoppingCart } from 'lucide-react';
+import { CreditCard, Check, User, Cash, Smartphone, ShoppingCart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -186,7 +186,7 @@ const POSCheckout: React.FC<POSCheckoutProps> = ({
             </TabsList>
             <TabsContent value="cash" className="py-3">
               <div className="text-center space-y-2 py-2 bg-gray-50 rounded-md">
-                <Wallet className="h-12 w-12 mx-auto text-purple-400" />
+                <Cash className="h-12 w-12 mx-auto text-purple-400" />
                 <p className="text-sm">Cash payment selected</p>
               </div>
             </TabsContent>
